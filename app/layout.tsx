@@ -16,7 +16,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  console.log("hello");
   return (
     <html lang="en">
       <body className={`${inter.className}  h-[100vh]`}>
