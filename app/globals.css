@@ -63,7 +63,12 @@
     --chart-5: 340 75% 55%;
   }
 }
-
+*
+{
+  background-color: transparent ;
+    color-scheme: light;
+    scroll-behavior: auto;
+}
 @layer base {
   * {
     @apply border-border;
