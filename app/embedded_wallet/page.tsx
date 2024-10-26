@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +9,60 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { FaGoogle } from "react-icons/fa6";
-import Link from "next/link";
-
+interface TipLinkMessageEvent extends MessageEvent {
+  data: {
+    type: string;
+    title?: string;
+    dAppSessionId?: string;
+    tipLinkSessionId?: string;
+  };
+}
 const Modal = () => {
   const handleGoogleLogin = () => {
     window.open("/embedded_adapter_login", "_blank", "noopener,noreferrer");
   };
+  useEffect(() => {
+    // Set up iframe for connection and configure postMessage listeners
+    const setupTipLinkConnection = () => {
+      const iframe = document.createElement("iframe");
 
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+
+      const messageHandler = (event: TipLinkMessageEvent) => {
+        // Verify the message origin to ensure it's from TipLink
+        console.log("reached1");
+        const { type } = event.data;
+        console.log("reached");
+        // Handle messages from TipLink iframe
+        if (type === "ready") {
+          console.log("TipLink iframe is ready for connection");
+        } else if (type === "ack") {
+          console.log("Acknowledged connection with TipLink");
+          // Redirect or perform another action on successful connection
+        }
+      };
+
+      // Attach the event listener for message events from the iframe
+      window.addEventListener("message", messageHandler as EventListener);
+
+      iframe.onload = () => {
+        console.log("TipLink iframe loaded");
+        iframe.contentWindow?.postMessage(
+          { type: "initiate_connection" },
+          "http://localhost:3000"
+        );
+      };
+
+      // Cleanup on component unmount
+      return () => {
+        window.removeEventListener("message", messageHandler as EventListener);
+        document.body.removeChild(iframe);
+      };
+    };
+
+    setupTipLinkConnection();
+  }, []);
   return (
     <Dialog defaultOpen={true}>
       <DialogContent className="relative w-full bg-white px-8 pb-8 pt-10 dark:bg-gray-950 mobile:min-w-[390px] mobile:px-10 sm:max-w-[430px] rounded-xl shadow-lg">
