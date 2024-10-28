@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { FaGoogle } from "react-icons/fa6";
-import WalletOverview from "./Sheet";
+import WalletOverview from "./WalletOverview";
 
 type AllowedOrigin =
   | "http://localhost:3000"
