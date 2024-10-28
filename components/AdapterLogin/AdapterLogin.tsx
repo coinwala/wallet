@@ -83,24 +83,6 @@ export default function AdapterLogin({ session }: UserInfoProps) {
     initWeb3Auth();
   }, [session]);
 
-  useEffect(() => {
-    const getPublicKey = async () => {
-      if (provider) {
-        try {
-          const accounts = await provider.request({ method: "getAccounts" });
-          if (Array.isArray(accounts) && accounts.length > 0) {
-            setPublicKey(accounts[0]);
-          }
-        } catch (error) {
-          console.error("Error fetching public key:", error);
-          setError("Failed to retrieve public key.");
-        }
-      }
-    };
-
-    getPublicKey();
-  }, [provider]);
-  console.log(publicKey);
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-black dark:bg-gray-950">
       <div className="mt-[-60px] flex w-full max-w-screen-xl items-center justify-center gap-2 sm:gap-4">
