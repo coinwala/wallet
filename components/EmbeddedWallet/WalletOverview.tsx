@@ -14,11 +14,13 @@ import {
 
 interface WalletOverviewProps {
   onClose?: () => void;
+  showWalletView: boolean;
+  setShowWalletView: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const WalletOverview = ({ onClose }: WalletOverviewProps) => {
+const WalletOverview = ({ onClose, showWalletView }: WalletOverviewProps) => {
   return (
-    <Sheet defaultOpen={true}>
+    <Sheet onOpenChange={onClose} open={showWalletView}>
       <SheetContent className="sm:max-w-[425px]">
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">

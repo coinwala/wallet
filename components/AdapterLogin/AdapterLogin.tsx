@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useState, useTransition, useRef } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Image from "next/image";
 import { Session } from "next-auth";
@@ -11,46 +11,96 @@ import { handleSignOut } from "@/actions";
 type UserInfoProps = {
   session: Session | null;
 };
+
+type MessagePayload = {
+  type: string;
+  windowName: string;
+  publicKey: string;
+};
+
+const sendMessageToParent = (message: MessagePayload) => {
+  if (window.opener) {
+    window.opener.postMessage(message, "*");
+  }
+};
+
+const VISIT_KEY = "has_visited_adapter";
+const SIGN_IN_KEY = "has_signed_in";
 const verifier = process.env.NEXT_PUBLIC_WEB3AUTH_VERIFIER ?? "";
+
 export default function AdapterLogin({ session }: UserInfoProps) {
   const [isPending, startTransition] = useTransition();
   const [hasVisited, setHasVisited] = useState(false);
   const [provider, setProvider] = useState<any>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    // Check if running in browser and get visit status
-    if (typeof window !== "undefined") {
-      const visitStatus = sessionStorage.getItem("hasVisited");
+  const hasSignedIn = useRef(false);
 
+  // Handle sign-in and visit status
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hasAlreadySignedIn = sessionStorage.getItem(SIGN_IN_KEY) === "true";
+
+    if (!hasAlreadySignedIn && !hasSignedIn.current) {
+      hasSignedIn.current = true;
+      sessionStorage.setItem(SIGN_IN_KEY, "true");
+
+      const visitStatus = localStorage.getItem(VISIT_KEY);
       if (!visitStatus) {
-        // If first visit, set the flag and trigger sign in
-        sessionStorage.setItem("hasVisited", "true");
-        setHasVisited(true);
-        startTransition(() => {
-          signInAction();
-        });
-      } else {
-        // If already visited, just update state
-        setHasVisited(true);
+        localStorage.setItem(VISIT_KEY, "true");
       }
+
+      setHasVisited(true);
+      startTransition(() => {
+        signInAction();
+      });
     }
   }, []);
+
+  // Effect to get public key when provider is set
+  useEffect(() => {
+    const getPublicKey = async () => {
+      if (provider) {
+        try {
+          const accounts = await provider.request({ method: "getAccounts" });
+          if (Array.isArray(accounts) && accounts.length > 0) {
+            const publicKeyString = accounts[0];
+            setPublicKey(publicKeyString);
+            localStorage.setItem("publicKey", publicKeyString);
+
+            sendMessageToParent({
+              type: "public_key",
+              windowName: "",
+              publicKey: publicKeyString,
+            });
+
+            sessionStorage.setItem(VISIT_KEY, "true");
+            // window.close();
+          }
+        } catch (error) {
+          console.error("Error fetching public key:", error);
+          setError("Failed to retrieve public key.");
+        }
+      }
+    };
+
+    getPublicKey();
+  }, [provider]);
+
+  // Handle web3auth initialization
   useEffect(() => {
     const initWeb3Auth = async () => {
-      if (!session) {
-        startTransition(() => {
-          signInAction();
-        });
-        return;
-      }
+      if (!session?.idToken) return;
+
       try {
         if (web3auth.status === "not_ready") {
           await web3auth.init();
         }
+
         if (web3auth.status === "connected") {
           setProvider(web3auth.provider);
-        } else if (session?.idToken) {
+        } else {
           const { payload } = decodeToken(session.idToken);
           const w3aProvider = await web3auth.connect({
             verifier,
@@ -58,6 +108,7 @@ export default function AdapterLogin({ session }: UserInfoProps) {
             idToken: session.idToken,
           });
           setProvider(w3aProvider);
+          localStorage.setItem("provider", JSON.stringify(w3aProvider));
           initClients();
         }
       } catch (e) {
@@ -76,7 +127,6 @@ export default function AdapterLogin({ session }: UserInfoProps) {
         }
         setProvider(null);
         setPublicKey(null);
-      } finally {
       }
     };
 
