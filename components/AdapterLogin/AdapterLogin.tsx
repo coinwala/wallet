@@ -16,11 +16,44 @@ type MessagePayload = {
   type: string;
   windowName: string;
   publicKey: string;
+  timestamp?: number;
 };
 
+// Enhanced message sender with proper origin handling
 const sendMessageToParent = (message: MessagePayload) => {
-  if (window.opener) {
-    window.opener.postMessage(message, "*");
+  if (!window.opener) {
+    console.error("No parent window found");
+    return;
+  }
+
+  const enrichedMessage = {
+    ...message,
+    timestamp: Date.now(),
+  };
+
+  const isDevelopment = process.env.NODE_ENV === "development";
+  const developmentOrigins = ["http://localhost:3000", "http://localhost:3001"];
+  const productionOrigins = process.env.NEXT_PUBLIC_ALLOWED_ORIGINS
+    ? JSON.parse(process.env.NEXT_PUBLIC_ALLOWED_ORIGINS)
+    : ["https://yourdomain.com"]; // Replace with your production domains
+
+  const originsToTry = isDevelopment ? developmentOrigins : productionOrigins;
+
+  // Try sending to each allowed origin
+  let messageSent = false;
+  for (const origin of originsToTry) {
+    try {
+      window.opener.postMessage(enrichedMessage, origin);
+      console.log(`Successfully sent message to ${origin}:`, enrichedMessage);
+      messageSent = true;
+      break;
+    } catch (err) {
+      console.warn(`Failed to send to ${origin}:`, err);
+    }
+  }
+
+  if (!messageSent) {
+    console.error("Failed to send message to any allowed origin");
   }
 };
 
@@ -58,7 +91,7 @@ export default function AdapterLogin({ session }: UserInfoProps) {
     }
   }, []);
 
-  // Effect to get public key when provider is set
+  // Enhanced effect to get public key with retry mechanism
   useEffect(() => {
     const getPublicKey = async () => {
       if (provider) {
@@ -69,14 +102,20 @@ export default function AdapterLogin({ session }: UserInfoProps) {
             setPublicKey(publicKeyString);
             localStorage.setItem("publicKey", publicKeyString);
 
-            sendMessageToParent({
-              type: "public_key",
-              windowName: "",
+            // Send public key with retry mechanism
+            const message = {
+              type: "login_success", // Changed type to be more specific
+              windowName: "default-window",
               publicKey: publicKeyString,
-            });
+            };
 
+            sendMessageToParent(message);
+
+            // Set visit status and close window after a short delay
             sessionStorage.setItem(VISIT_KEY, "true");
-            // window.close();
+            setTimeout(() => {
+              window.close();
+            }, 1000); // Give time for the message to be sent
           }
         } catch (error) {
           console.error("Error fetching public key:", error);
