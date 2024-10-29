@@ -1,13 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Wallet,
-  ArrowRightLeft,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  X,
-} from "lucide-react";
+import { Wallet, ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -18,7 +12,11 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 
-const WalletOverview = () => {
+interface WalletOverviewProps {
+  onClose?: () => void;
+}
+
+const WalletOverview = ({ onClose }: WalletOverviewProps) => {
   return (
     <Sheet defaultOpen={true}>
       <SheetContent className="sm:max-w-[425px]">
@@ -70,7 +68,7 @@ const WalletOverview = () => {
 
         <SheetFooter className="mt-6">
           <SheetClose asChild>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" onClick={onClose}>
               <X className="mr-2 h-4 w-4" />
               Close
             </Button>

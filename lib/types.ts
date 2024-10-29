@@ -12,3 +12,22 @@ export interface TokenWithBalance extends TokenDetails {
     balance: string;
     usdBalance: string;
 }
+
+export type AllowedOrigin =
+  | "http://localhost:3000"
+  | "http://localhost:3001"
+  | "https://staging.tiplink.io"
+  | "https://dev.tiplink.io"
+  | "https://adapter.tiplink.io"
+  | "https://tiplink.io";
+
+  export interface MessageData {
+  type: string;
+  windowName?: string;
+  dAppSessionId?: string;
+  tipLinkSessionId?: string;
+  publicKey?: string;
+  title?: string;
+  requestId?: string;
+  timestamp?: number;
+}
