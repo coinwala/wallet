@@ -34,10 +34,7 @@ const useMessageHandler = () => {
     };
 
     const isDevelopment = process.env.NODE_ENV === "development";
-    const developmentOrigins = [
-      "http://localhost:3000",
-      "http://localhost:3001",
-    ];
+    const developmentOrigins = ["http://localhost:3001"];
     const originsToTry = isDevelopment ? developmentOrigins : ALLOWED_ORIGINS;
 
     const sendToOrigin = (origin: string): boolean => {
@@ -258,7 +255,15 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
             windowName: "default-window",
           });
           break;
-
+        case "login_success":
+          setShowLoginView(false);
+          break;
+        case "disconnect":
+          // Clear all references and state
+          publicKeyRef.current = null;
+          parentOriginRef.current = null;
+          setShowLoginView(true); // Reset to initial state
+          break;
         default:
           console.log("Unhandled message type:", event.data.type);
       }
@@ -349,11 +354,28 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     });
   }, [sendMessageToParent]);
   const handleLoginClose = useCallback(() => {
+    // Reset all state
     setShowLoginView(false);
+    setShowWalletView(false);
+    setTokenBalances([]);
+    setTotalBalanceUSD(0);
+    publicKeyRef.current = null;
+
+    // Clear any stored session data
+    localStorage.clear(); // Or specifically clear wallet-related items
+
+    // Notify parent
     sendMessageToParent({
       type: "disconnect",
       windowName: "default-window",
     });
+
+    // Wait for disconnect acknowledgment before final cleanup
+    const cleanup = () => {
+      processedMessages.current.clear();
+    };
+
+    cleanup();
   }, [sendMessageToParent]);
 
   return showWalletView ? (
