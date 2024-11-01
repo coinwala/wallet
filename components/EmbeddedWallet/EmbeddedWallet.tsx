@@ -13,11 +13,14 @@ import WalletOverview from "./WalletOverview";
 import { createMessageId, isAllowedOrigin } from "@/lib/messageUtils";
 import { MessageData } from "@/lib/types";
 import { ALLOWED_ORIGINS } from "@/lib/constants";
+import { Session } from "next-auth";
 
 const useMessageHandler = () => {
   const parentOriginRef = useRef<string | null>(null);
   const processedMessages = useRef<Set<string>>(new Set());
+  const publicKeyRef = useRef<string | null>(null);
 
+  // Modified sendMessageToParent to handle development environment
   const sendMessageToParent = useCallback((message: MessageData) => {
     if (typeof window === "undefined" || !window.parent) {
       console.error("No parent window found");
@@ -30,33 +33,98 @@ const useMessageHandler = () => {
       timestamp: Date.now(),
     };
 
-    try {
-      if (parentOriginRef.current && isAllowedOrigin(parentOriginRef.current)) {
-        window.parent.postMessage(enrichedMessage, parentOriginRef.current);
-        console.log(`Sent message to parent:`, enrichedMessage);
-      } else {
-        // Try each origin until one succeeds
-        for (const origin of ALLOWED_ORIGINS) {
-          try {
-            window.parent.postMessage(enrichedMessage, origin);
-            parentOriginRef.current = origin;
-            console.log(`Sent message to ${origin}:`, enrichedMessage);
-            break;
-          } catch (err) {
-            console.warn(`Failed to send to ${origin}:`, err);
-          }
-        }
+    const isDevelopment = process.env.NODE_ENV === "development";
+    const developmentOrigins = [
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ];
+    const originsToTry = isDevelopment ? developmentOrigins : ALLOWED_ORIGINS;
+
+    const sendToOrigin = (origin: string): boolean => {
+      try {
+        window.parent.postMessage(enrichedMessage, origin);
+        console.log(`Successfully sent message to ${origin}:`, enrichedMessage);
+        return true;
+      } catch (err) {
+        console.warn(`Failed to send to ${origin}:`, err);
+        return false;
       }
-    } catch (error) {
-      console.error("Failed to send message:", error);
+    };
+
+    // If we have a stored parent origin and it's valid, try it first
+    if (parentOriginRef.current) {
+      const isAllowed = isDevelopment
+        ? developmentOrigins.includes(parentOriginRef.current)
+        : isAllowedOrigin(parentOriginRef.current);
+
+      if (isAllowed && sendToOrigin(parentOriginRef.current)) {
+        return;
+      }
+    }
+
+    // Try all allowed origins
+    let messageSent = false;
+    for (const origin of originsToTry) {
+      if (sendToOrigin(origin)) {
+        parentOriginRef.current = origin;
+        messageSent = true;
+        break;
+      }
+    }
+
+    if (!messageSent) {
+      console.error("Failed to send message to any allowed origin");
     }
   }, []);
 
-  return { sendMessageToParent, parentOriginRef, processedMessages };
-};
+  // Modified to handle development environment
+  const sendPublicKey = useCallback(
+    (publicKey: string, dAppSessionId?: string, tipLinkSessionId?: string) => {
+      publicKeyRef.current = publicKey;
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const originsToTry = isDevelopment
+        ? ["http://localhost:3000", "http://localhost:3001"]
+        : ALLOWED_ORIGINS;
 
-const LoginDialog = ({ onGoogleLogin }: { onGoogleLogin: () => void }) => (
-  <Dialog defaultOpen={true}>
+      originsToTry.forEach((origin) => {
+        try {
+          window.parent.postMessage(
+            {
+              type: "public_key",
+              publicKey,
+              windowName: "default-window",
+              timestamp: Date.now(),
+              dAppSessionId,
+              tipLinkSessionId,
+            },
+            origin
+          );
+        } catch (err) {
+          console.warn(`Failed to send public key to ${origin}:`, err);
+        }
+      });
+    },
+    []
+  );
+
+  return {
+    sendMessageToParent,
+    sendPublicKey,
+    parentOriginRef,
+    processedMessages,
+    publicKeyRef,
+  };
+};
+const LoginDialog = ({
+  onGoogleLogin,
+  handleLoginClose,
+  showLoginView,
+}: {
+  onGoogleLogin: () => void;
+  handleLoginClose: () => void;
+  showLoginView: boolean;
+}) => (
+  <Dialog onOpenChange={handleLoginClose} defaultOpen={showLoginView}>
     <DialogContent className="relative w-full bg-white px-8 pb-8 pt-10 dark:bg-gray-950 mobile:min-w-[390px] mobile:px-10 sm:max-w-[430px] rounded-xl shadow-lg">
       <div className="mx-auto flex flex-shrink-0 items-center justify-center">
         <Image
@@ -91,17 +159,34 @@ const LoginDialog = ({ onGoogleLogin }: { onGoogleLogin: () => void }) => (
     </DialogContent>
   </Dialog>
 );
+type UserInfoProps = {
+  session: Session | null;
+};
 
-export default function EmbeddedWallet() {
+export default function EmbeddedWallet({ session }: UserInfoProps) {
   const [showWalletView, setShowWalletView] = useState(false);
-  const { sendMessageToParent, parentOriginRef, processedMessages } =
-    useMessageHandler();
-
+  const [tokenBalances, setTokenBalances] = useState<any[]>([]);
+  const [totalBalanceUSD, setTotalBalanceUSD] = useState(0);
+  const [showLoginView, setShowLoginView] = useState(true);
+  const {
+    sendMessageToParent,
+    sendPublicKey,
+    parentOriginRef,
+    processedMessages,
+    publicKeyRef,
+  } = useMessageHandler();
+  console.log("session", session);
   const handleMessage = useCallback(
     (event: MessageEvent<MessageData>) => {
       const origin = event.origin;
 
-      if (!isAllowedOrigin(origin)) {
+      // Allow messages from both ports during development
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const isValidOrigin = isDevelopment
+        ? origin.startsWith("http://localhost")
+        : isAllowedOrigin(origin);
+
+      if (!isValidOrigin) {
         console.warn("Unauthorized origin:", origin);
         return;
       }
@@ -133,6 +218,19 @@ export default function EmbeddedWallet() {
             dAppSessionId: event.data.dAppSessionId,
             tipLinkSessionId: event.data.tipLinkSessionId,
           });
+
+          break;
+
+        case "public_key":
+          console.log("Received public key:", event.data.publicKey);
+          if (event.data.publicKey) {
+            publicKeyRef.current = event.data.publicKey;
+            sendMessageToParent({
+              type: "public_key",
+              windowName: "",
+              publicKey: event.data.publicKey,
+            });
+          }
           break;
 
         case "ack_loaded_public_key":
@@ -140,7 +238,7 @@ export default function EmbeddedWallet() {
             type: "loaded_public_key",
             dAppSessionId: event.data.dAppSessionId,
             tipLinkSessionId: event.data.tipLinkSessionId,
-            publicKey: "7vDLPUWvPtaTaGohSxbBuvMFnPeRkeutsDamZSfPE36r",
+            publicKey: publicKeyRef.current || "",
           });
           break;
 
@@ -154,11 +252,11 @@ export default function EmbeddedWallet() {
 
         case "show_wallet":
           console.log("show_wallet");
+          setShowWalletView(true);
           sendMessageToParent({
             type: "show_wallet",
             windowName: "default-window",
           });
-          setShowWalletView(true);
           break;
 
         default:
@@ -167,6 +265,18 @@ export default function EmbeddedWallet() {
     },
     [sendMessageToParent]
   );
+
+  const fetchTokenBalances = async (publicKey: string) => {
+    try {
+      const response = await fetch(`/api/tokens?address=${publicKey}`);
+      if (!response.ok) throw new Error("Failed to fetch token balances");
+      const data = await response.json();
+      setTokenBalances(data.tokens || []);
+      setTotalBalanceUSD(data.totalBalance || 0);
+    } catch (error) {
+      console.error("Error fetching token balances:", error);
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -177,27 +287,86 @@ export default function EmbeddedWallet() {
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage, sendMessageToParent]);
 
+  const handleLoginSuccess = useCallback(
+    (publicKey: string) => {
+      if (!publicKey) {
+        console.error("No public key received from login");
+        return;
+      }
+
+      // Store and send the public key
+      sendPublicKey(publicKey);
+
+      // Fetch token balances with the new public key
+      fetchTokenBalances(publicKey);
+
+      // Update wallet view
+      setShowWalletView(true);
+    },
+    [sendPublicKey]
+  );
+  console.log(
+    "provider",
+    localStorage.getItem("7z2fo3j1mljjfcmdrk5r32xaufzct6git2bjc17wdnoy_SFA")
+  );
   const handleGoogleLogin = useCallback(() => {
     console.log("Initiating Google login");
     sendMessageToParent({
-      type: "public_key",
-      windowName: "",
-      publicKey: "7vDLPUWvPtaTaGohSxbBuvMFnPeRkeutsDamZSfPE36r",
+      type: "login_initiated",
+      windowName: "default-window",
     });
-  }, [sendMessageToParent]);
 
-  const handleWalletClose = useCallback(() => {
+    const width = 500;
+    const height = 600;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    // Create popup and add message listener for login response
+    const loginWindow = window.open(
+      "/embedded_adapter_login",
+      "Login",
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+
+    // Handle login response message
+    const handleLoginResponse = (event: MessageEvent) => {
+      if (!isAllowedOrigin(event.origin)) return;
+
+      if (event.data?.type === "login_success" && event.data?.publicKey) {
+        handleLoginSuccess(event.data.publicKey);
+        window.removeEventListener("message", handleLoginResponse);
+      }
+    };
+
+    window.addEventListener("message", handleLoginResponse);
+  }, [sendMessageToParent, handleLoginSuccess]);
+
+  const handleOverviewClose = useCallback(() => {
     setShowWalletView(false);
-    console.log("hide_wallet");
     sendMessageToParent({
       type: "hide_wallet",
       windowName: "default-window",
     });
   }, [sendMessageToParent]);
+  const handleLoginClose = useCallback(() => {
+    setShowLoginView(false);
+    sendMessageToParent({
+      type: "disconnect",
+      windowName: "default-window",
+    });
+  }, [sendMessageToParent]);
 
   return showWalletView ? (
-    <WalletOverview onClose={handleWalletClose} />
+    <WalletOverview
+      showWalletView={showWalletView}
+      onClose={handleOverviewClose}
+      session={session}
+    />
   ) : (
-    <LoginDialog onGoogleLogin={handleGoogleLogin} />
+    <LoginDialog
+      showLoginView={showLoginView}
+      handleLoginClose={handleLoginClose}
+      onGoogleLogin={handleGoogleLogin}
+    />
   );
 }

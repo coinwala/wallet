@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -11,19 +11,53 @@ import {
   SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
+import { Session } from "next-auth";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 interface WalletOverviewProps {
   onClose?: () => void;
+  showWalletView: boolean;
+  session: Session | null;
 }
 
-const WalletOverview = ({ onClose }: WalletOverviewProps) => {
+const WalletOverview = ({
+  onClose,
+  showWalletView,
+  session,
+}: WalletOverviewProps) => {
   return (
-    <Sheet defaultOpen={true}>
+    <Sheet onOpenChange={onClose} open={showWalletView}>
       <SheetContent className="sm:max-w-[425px]">
         <SheetHeader className="mb-6">
-          <SheetTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Wallet Overview
+          <SheetTitle>
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative w-24 h-12 flex items-center justify-center">
+                {/* App Logo */}
+                <div className="absolute left-1/2 -ml-4">
+                  <div className="h-8 w-8 overflow-hidden rounded-full">
+                    <img
+                      src="/icons/logo.png"
+                      alt="Logo"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                </div>
+
+                {/* User Avatar */}
+                <div className="absolute left-1/2 ml-4">
+                  <Avatar className="h-8 w-8 border-2 border-background">
+                    <AvatarImage
+                      src={
+                        session?.user?.image || "https://via.placeholder.com/30"
+                      }
+                      alt="User avatar"
+                      className="bg-gray-50 dark:bg-gray-800"
+                    />
+                  </Avatar>
+                </div>
+              </div>
+              <span className="mt-2">Wallet Overview</span>
+            </div>
           </SheetTitle>
           <SheetDescription>
             Manage your wallet, send and receive funds
