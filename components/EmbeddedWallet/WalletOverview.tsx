@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
@@ -13,53 +13,149 @@ import {
 } from "@/components/ui/sheet";
 import { Session } from "next-auth";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
+import { TokenWithBalance } from "@/lib/types";
+import { decodeToken, web3auth } from "@/lib/web3auth";
+import { initClients } from "@/lib/client";
 
 interface WalletOverviewProps {
   onClose?: () => void;
   showWalletView: boolean;
   session: Session | null;
 }
-
+const verifier = process.env.NEXT_PUBLIC_WEB3AUTH_VERIFIER ?? "";
 const WalletOverview = ({
   onClose,
   showWalletView,
   session,
 }: WalletOverviewProps) => {
+  const [provider, setProvider] = useState<any>(null);
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalBalanceUSD, setTotalBalanceUSD] = useState<number>(0);
+  const [tokenBalances, setTokenBalances] = useState<TokenWithBalance[]>([]);
+  console.log("session", session);
+  useEffect(() => {
+    const initWeb3Auth = async () => {
+      try {
+        if (web3auth.status === "not_ready") {
+          await web3auth.init();
+        }
+        if (web3auth.status === "connected") {
+          setProvider(web3auth.provider);
+        } else if (session?.idToken) {
+          const { payload } = decodeToken(session.idToken);
+          const w3aProvider = await web3auth.connect({
+            verifier,
+            verifierId: (payload as any).email,
+            idToken: session.idToken,
+          });
+          setProvider(w3aProvider);
+          initClients();
+        }
+      } catch (e) {
+        console.error("Error initializing & connecting to web3auth:", e);
+        if (
+          e instanceof Error &&
+          (e.message.includes("Duplicate token found") ||
+            e.message.includes("Wallet is not connected"))
+        ) {
+          setError(
+            "Session expired or wallet disconnected. Please sign in again."
+          );
+        } else {
+          setError("An error occurred. Please try again.");
+        }
+        setProvider(null);
+        setPublicKey(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initWeb3Auth();
+  }, [session]);
+  useEffect(() => {
+    const getPublicKey = async () => {
+      if (provider) {
+        try {
+          const accounts = await provider.request({ method: "getAccounts" });
+          if (Array.isArray(accounts) && accounts.length > 0) {
+            setPublicKey(accounts[0]);
+          }
+        } catch (error) {
+          console.error("Error fetching public key:", error);
+          setError("Failed to retrieve public key.");
+        }
+      }
+    };
+
+    getPublicKey();
+  }, [provider]);
+  useEffect(() => {
+    const fetchTokenBalances = async () => {
+      if (publicKey) {
+        try {
+          const response = await fetch(`/api/tokens?address=${publicKey}`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch token balances");
+          }
+          const data = await response.json();
+          const nonZeroBalances = data.tokens.filter(
+            (token: TokenWithBalance) => parseFloat(token.balance) > 0
+          );
+          setTokenBalances(nonZeroBalances);
+          setTotalBalanceUSD(parseFloat(data.totalBalance));
+        } catch (error) {
+          console.error("Error fetching token balances:", error);
+          setError("Failed to retrieve token balances.");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchTokenBalances();
+  }, [publicKey]);
+  console.log("tokenBalances", tokenBalances);
+  console.log("publicKey", publicKey);
   return (
     <Sheet onOpenChange={onClose} open={showWalletView}>
       <SheetContent className="sm:max-w-[425px]">
         <SheetHeader className="mb-6">
           <SheetTitle>
             <div className="flex flex-col items-center justify-center">
-              <div className="relative w-24 h-12 flex items-center justify-center">
-                {/* App Logo */}
-                <div className="absolute left-1/2 -ml-4">
+              <div className="relative w-24 h-12 flex items-center justify-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  <div className="h-8 w-8  rounded-full">
+                    <Avatar className="h-8 w-14 border-2 border-background">
+                      <AvatarImage
+                        src={"/icons/logo.png"}
+                        alt="User avatar"
+                        className="bg-gray-50 dark:bg-gray-800"
+                      />
+                    </Avatar>
+                  </div>
                   <div className="h-8 w-8 overflow-hidden rounded-full">
-                    <img
-                      src="/icons/logo.png"
-                      alt="Logo"
-                      className="h-full w-full object-contain"
-                    />
+                    <Avatar className="h-8 w-8 border-2 border-background">
+                      <AvatarImage
+                        src={
+                          session?.user?.image ||
+                          "https://via.placeholder.com/30"
+                        }
+                        alt="User avatar"
+                        className="bg-gray-50 dark:bg-gray-800"
+                      />
+                    </Avatar>
                   </div>
                 </div>
-
-                {/* User Avatar */}
-                <div className="absolute left-1/2 ml-4">
-                  <Avatar className="h-8 w-8 border-2 border-background">
-                    <AvatarImage
-                      src={
-                        session?.user?.image || "https://via.placeholder.com/30"
-                      }
-                      alt="User avatar"
-                      className="bg-gray-50 dark:bg-gray-800"
-                    />
-                  </Avatar>
-                </div>
               </div>
+
               <span className="mt-2">Wallet Overview</span>
             </div>
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="flex items-center justify-center">
             Manage your wallet, send and receive funds
           </SheetDescription>
         </SheetHeader>
