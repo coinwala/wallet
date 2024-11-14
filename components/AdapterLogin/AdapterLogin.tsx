@@ -7,6 +7,7 @@ import { signInAction } from "@/lib/signInAction";
 import { decodeToken, web3auth } from "@/lib/web3auth";
 import { initClients } from "@/lib/client";
 import { handleSignOut } from "@/actions";
+import * as CryptoJS from "crypto-js";
 
 type UserInfoProps = {
   session: Session | null;
@@ -59,7 +60,31 @@ const sendMessageToParent = (message: MessagePayload) => {
 
 const VISIT_KEY = "has_visited_adapter";
 const SIGN_IN_KEY = "has_signed_in";
+const ENCRYPTION_KEY = "your_encryption_key";
+const ENCRYPTION_VALUE = "your_encryption_value";
 const verifier = process.env.NEXT_PUBLIC_WEB3AUTH_VERIFIER ?? "";
+
+const encryptWithKeyValue = (data: any, key: string, value: string) => {
+  const encrypted = CryptoJS.AES.encrypt(
+    JSON.stringify(data),
+    CryptoJS.enc.Utf8.parse(key),
+    {
+      iv: CryptoJS.enc.Utf8.parse(value),
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7,
+    }
+  ).toString();
+  return encrypted;
+};
+
+const storeSession = (session: Session) => {
+  const encryptedSession = encryptWithKeyValue(
+    session,
+    ENCRYPTION_KEY,
+    ENCRYPTION_VALUE
+  );
+  localStorage.setItem("encrypted_session", encryptedSession);
+};
 
 export default function AdapterLogin({ session }: UserInfoProps) {
   const [isPending, startTransition] = useTransition();
@@ -90,7 +115,6 @@ export default function AdapterLogin({ session }: UserInfoProps) {
     }
   }, []);
 
-  // Enhanced effect to get public key with retry mechanism
   useEffect(() => {
     const getPublicKey = async () => {
       if (provider) {
@@ -126,7 +150,6 @@ export default function AdapterLogin({ session }: UserInfoProps) {
     getPublicKey();
   }, [provider]);
 
-  // Handle web3auth initialization
   useEffect(() => {
     const initWeb3Auth = async () => {
       if (!session?.idToken) return;
@@ -147,6 +170,7 @@ export default function AdapterLogin({ session }: UserInfoProps) {
           });
           setProvider(w3aProvider);
           localStorage.setItem("provider", JSON.stringify(w3aProvider));
+          storeSession(session);
           initClients();
         }
       } catch (e) {
@@ -170,6 +194,27 @@ export default function AdapterLogin({ session }: UserInfoProps) {
 
     initWeb3Auth();
   }, [session]);
+  useEffect(() => {
+    const encryptedSession = localStorage.getItem("encrypted_session");
+    if (encryptedSession) {
+      try {
+        const session = JSON.parse(
+          CryptoJS.AES.decrypt(
+            encryptedSession,
+            CryptoJS.enc.Utf8.parse(ENCRYPTION_KEY),
+            {
+              iv: CryptoJS.enc.Utf8.parse(ENCRYPTION_VALUE),
+              mode: CryptoJS.mode.CBC,
+              padding: CryptoJS.pad.Pkcs7,
+            }
+          ).toString(CryptoJS.enc.Utf8)
+        ) as Session;
+        // Use the session prop directly
+      } catch (error) {
+        console.error("Error decrypting session:", error);
+      }
+    }
+  }, []);
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-black dark:bg-gray-950">

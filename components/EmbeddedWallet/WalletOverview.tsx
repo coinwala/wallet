@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowDownToLine, ArrowUpFromLine, X } from "lucide-react";
@@ -13,53 +13,77 @@ import {
 } from "@/components/ui/sheet";
 import { Session } from "next-auth";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 
 interface WalletOverviewProps {
   onClose?: () => void;
   showWalletView: boolean;
   session: Session | null;
 }
-
+const ENCRYPTION_KEY = "your_encryption_key";
+const ENCRYPTION_VALUE = "your_encryption_value";
 const WalletOverview = ({
   onClose,
   showWalletView,
   session,
 }: WalletOverviewProps) => {
+  const decrypted_session = (key: string, value: string) => {
+    const encryptedSession = localStorage.getItem("session");
+    if (!encryptedSession) return null;
+
+    const decrypted = CryptoJS.AES.decrypt(
+      encryptedSession,
+      CryptoJS.enc.Utf8.parse(key),
+      {
+        iv: CryptoJS.enc.Utf8.parse(value),
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7,
+      }
+    ).toString(CryptoJS.enc.Utf8);
+
+    return JSON.parse(decrypted);
+  };
+  useEffect(() => {
+    console.log("hello");
+    console.log(decrypted_session(ENCRYPTION_KEY, ENCRYPTION_VALUE));
+  }, [showWalletView]);
+
   return (
     <Sheet onOpenChange={onClose} open={showWalletView}>
       <SheetContent className="sm:max-w-[425px]">
         <SheetHeader className="mb-6">
           <SheetTitle>
             <div className="flex flex-col items-center justify-center">
-              <div className="relative w-24 h-12 flex items-center justify-center">
-                {/* App Logo */}
-                <div className="absolute left-1/2 -ml-4">
+              <div className="relative w-24 h-12 flex items-center justify-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  <div className="h-8 w-8  rounded-full">
+                    <Avatar className="h-8 w-14 border-2 border-background">
+                      <AvatarImage
+                        src={"/icons/logo.png"}
+                        alt="User avatar"
+                        className="bg-gray-50 dark:bg-gray-800"
+                      />
+                    </Avatar>
+                  </div>
                   <div className="h-8 w-8 overflow-hidden rounded-full">
-                    <img
-                      src="/icons/logo.png"
-                      alt="Logo"
-                      className="h-full w-full object-contain"
-                    />
+                    <Avatar className="h-8 w-8 border-2 border-background">
+                      <AvatarImage
+                        src={
+                          session?.user?.image ||
+                          "https://via.placeholder.com/30"
+                        }
+                        alt="User avatar"
+                        className="bg-gray-50 dark:bg-gray-800"
+                      />
+                    </Avatar>
                   </div>
                 </div>
-
-                {/* User Avatar */}
-                <div className="absolute left-1/2 ml-4">
-                  <Avatar className="h-8 w-8 border-2 border-background">
-                    <AvatarImage
-                      src={
-                        session?.user?.image || "https://via.placeholder.com/30"
-                      }
-                      alt="User avatar"
-                      className="bg-gray-50 dark:bg-gray-800"
-                    />
-                  </Avatar>
-                </div>
               </div>
+
               <span className="mt-2">Wallet Overview</span>
             </div>
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="flex items-center justify-center">
             Manage your wallet, send and receive funds
           </SheetDescription>
         </SheetHeader>
