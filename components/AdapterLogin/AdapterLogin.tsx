@@ -69,7 +69,6 @@ export default function AdapterLogin({ session }: UserInfoProps) {
   const [error, setError] = useState<string | null>(null);
   const hasSignedIn = useRef(false);
 
-  // Handle sign-in and visit status
   useEffect(() => {
     if (typeof window === "undefined") return;
 

@@ -20,7 +20,6 @@ const useMessageHandler = () => {
   const processedMessages = useRef<Set<string>>(new Set());
   const publicKeyRef = useRef<string | null>(null);
 
-  // Modified sendMessageToParent to handle development environment
   const sendMessageToParent = useCallback((message: MessageData) => {
     if (typeof window === "undefined" || !window.parent) {
       console.error("No parent window found");
@@ -34,77 +33,58 @@ const useMessageHandler = () => {
     };
 
     const isDevelopment = process.env.NODE_ENV === "development";
-    const developmentOrigins = [
-      "http://localhost:3000",
-      "http://localhost:3001",
-    ];
-    const originsToTry = isDevelopment ? developmentOrigins : ALLOWED_ORIGINS;
 
-    const sendToOrigin = (origin: string): boolean => {
+    // In development, always use '*' as the target origin
+    if (isDevelopment) {
       try {
-        window.parent.postMessage(enrichedMessage, origin);
-        console.log(`Successfully sent message to ${origin}:`, enrichedMessage);
-        return true;
+        window.parent.postMessage(enrichedMessage, "*");
+        console.log("Message sent with wildcard origin:", enrichedMessage);
       } catch (err) {
-        console.warn(`Failed to send to ${origin}:`, err);
-        return false;
+        console.error("Failed to send message:", err);
       }
-    };
+      return;
+    }
 
-    // If we have a stored parent origin and it's valid, try it first
+    // In production, use the stored parent origin or ALLOWED_ORIGINS
     if (parentOriginRef.current) {
-      const isAllowed = isDevelopment
-        ? developmentOrigins.includes(parentOriginRef.current)
-        : isAllowedOrigin(parentOriginRef.current);
-
-      if (isAllowed && sendToOrigin(parentOriginRef.current)) {
-        return;
+      try {
+        window.parent.postMessage(enrichedMessage, parentOriginRef.current);
+      } catch (err) {
+        console.warn(`Failed to send to ${parentOriginRef.current}:`, err);
       }
-    }
-
-    // Try all allowed origins
-    let messageSent = false;
-    for (const origin of originsToTry) {
-      if (sendToOrigin(origin)) {
-        parentOriginRef.current = origin;
-        messageSent = true;
-        break;
+    } else {
+      // Try each allowed origin in production
+      let messageSent = false;
+      for (const origin of ALLOWED_ORIGINS) {
+        try {
+          window.parent.postMessage(enrichedMessage, origin);
+          parentOriginRef.current = origin;
+          messageSent = true;
+          break;
+        } catch (err) {
+          console.warn(`Failed to send to ${origin}:`, err);
+        }
       }
-    }
 
-    if (!messageSent) {
-      console.error("Failed to send message to any allowed origin");
+      if (!messageSent) {
+        console.error("Failed to send message to any allowed origin");
+      }
     }
   }, []);
 
-  // Modified to handle development environment
   const sendPublicKey = useCallback(
     (publicKey: string, dAppSessionId?: string, tipLinkSessionId?: string) => {
       publicKeyRef.current = publicKey;
-      const isDevelopment = process.env.NODE_ENV === "development";
-      const originsToTry = isDevelopment
-        ? ["http://localhost:3000", "http://localhost:3001"]
-        : ALLOWED_ORIGINS;
-
-      originsToTry.forEach((origin) => {
-        try {
-          window.parent.postMessage(
-            {
-              type: "public_key",
-              publicKey,
-              windowName: "default-window",
-              timestamp: Date.now(),
-              dAppSessionId,
-              tipLinkSessionId,
-            },
-            origin
-          );
-        } catch (err) {
-          console.warn(`Failed to send public key to ${origin}:`, err);
-        }
+      sendMessageToParent({
+        type: "public_key",
+        publicKey,
+        windowName: "default-window",
+        timestamp: Date.now(),
+        dAppSessionId,
+        tipLinkSessionId,
       });
     },
-    []
+    [sendMessageToParent]
   );
 
   return {
@@ -115,6 +95,8 @@ const useMessageHandler = () => {
     publicKeyRef,
   };
 };
+
+// Rest of the component remains the same
 const LoginDialog = ({
   onGoogleLogin,
   handleLoginClose,
@@ -124,6 +106,7 @@ const LoginDialog = ({
   handleLoginClose: () => void;
   showLoginView: boolean;
 }) => (
+  // LoginDialog implementation remains unchanged
   <Dialog onOpenChange={handleLoginClose} defaultOpen={showLoginView}>
     <DialogContent className="relative w-full bg-white px-8 pb-8 pt-10 dark:bg-gray-950 mobile:min-w-[390px] mobile:px-10 sm:max-w-[430px] rounded-xl shadow-lg">
       <div className="mx-auto flex flex-shrink-0 items-center justify-center">
@@ -159,14 +142,13 @@ const LoginDialog = ({
     </DialogContent>
   </Dialog>
 );
+
 type UserInfoProps = {
   session: Session | null;
 };
 
 export default function EmbeddedWallet({ session }: UserInfoProps) {
   const [showWalletView, setShowWalletView] = useState(false);
-  const [tokenBalances, setTokenBalances] = useState<any[]>([]);
-  const [totalBalanceUSD, setTotalBalanceUSD] = useState(0);
   const [showLoginView, setShowLoginView] = useState(true);
   const {
     sendMessageToParent,
@@ -175,21 +157,18 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     processedMessages,
     publicKeyRef,
   } = useMessageHandler();
-  console.log("session", session);
+
   const handleMessage = useCallback(
     (event: MessageEvent<MessageData>) => {
-      const origin = event.origin;
-
-      // Allow messages from both ports during development
       const isDevelopment = process.env.NODE_ENV === "development";
-      const isValidOrigin = isDevelopment
-        ? origin.startsWith("http://localhost")
-        : isAllowedOrigin(origin);
 
-      if (!isValidOrigin) {
-        console.warn("Unauthorized origin:", origin);
+      // In development, accept all origins
+      if (!isDevelopment && !isAllowedOrigin(event.origin)) {
+        console.warn("Unauthorized origin:", event.origin);
         return;
       }
+
+      parentOriginRef.current = event.origin;
 
       const messageId = createMessageId(
         event.data?.type,
@@ -201,8 +180,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
       if (processedMessages.current.size > 100) {
         processedMessages.current.clear();
       }
-
-      parentOriginRef.current = origin;
 
       if (!event.data || typeof event.data !== "object") {
         console.warn("Invalid message format");
@@ -218,7 +195,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
             dAppSessionId: event.data.dAppSessionId,
             tipLinkSessionId: event.data.tipLinkSessionId,
           });
-
           break;
 
         case "public_key":
@@ -266,18 +242,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     [sendMessageToParent]
   );
 
-  const fetchTokenBalances = async (publicKey: string) => {
-    try {
-      const response = await fetch(`/api/tokens?address=${publicKey}`);
-      if (!response.ok) throw new Error("Failed to fetch token balances");
-      const data = await response.json();
-      setTokenBalances(data.tokens || []);
-      setTotalBalanceUSD(data.totalBalance || 0);
-    } catch (error) {
-      console.error("Error fetching token balances:", error);
-    }
-  };
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -293,22 +257,12 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         console.error("No public key received from login");
         return;
       }
-
-      // Store and send the public key
       sendPublicKey(publicKey);
-
-      // Fetch token balances with the new public key
-      fetchTokenBalances(publicKey);
-
-      // Update wallet view
       setShowWalletView(true);
     },
     [sendPublicKey]
   );
-  console.log(
-    "provider",
-    localStorage.getItem("7z2fo3j1mljjfcmdrk5r32xaufzct6git2bjc17wdnoy_SFA")
-  );
+
   const handleGoogleLogin = useCallback(() => {
     console.log("Initiating Google login");
     sendMessageToParent({
@@ -321,16 +275,26 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
-    // Create popup and add message listener for login response
+    // Add parent origin to the login URL
+    const loginUrl = new URL("/embedded_adapter_login", window.location.origin);
+    if (parentOriginRef.current) {
+      loginUrl.searchParams.set("parentOrigin", parentOriginRef.current);
+    }
+
     const loginWindow = window.open(
-      "/embedded_adapter_login",
+      loginUrl.toString(),
       "Login",
       `width=${width},height=${height},left=${left},top=${top}`
     );
 
-    // Handle login response message
     const handleLoginResponse = (event: MessageEvent) => {
-      if (!isAllowedOrigin(event.origin)) return;
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const isValidOrigin = isDevelopment
+        ? event.origin.startsWith("http://localhost:3000") ||
+          event.origin.startsWith("http://localhost:3001")
+        : isAllowedOrigin(event.origin);
+
+      if (!isValidOrigin) return;
 
       if (event.data?.type === "login_success" && event.data?.publicKey) {
         handleLoginSuccess(event.data.publicKey);
@@ -348,10 +312,11 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
       windowName: "default-window",
     });
   }, [sendMessageToParent]);
+
   const handleLoginClose = useCallback(() => {
     setShowLoginView(false);
     sendMessageToParent({
-      type: "disconnect",
+      type: "cancel_connect",
       windowName: "default-window",
     });
   }, [sendMessageToParent]);
