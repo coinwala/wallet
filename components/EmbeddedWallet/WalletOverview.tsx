@@ -17,6 +17,8 @@ import Image from "next/image";
 import { TokenWithBalance } from "@/lib/types";
 import { decodeToken, web3auth } from "@/lib/web3auth";
 import { initClients } from "@/lib/client";
+import TokenList from "../WalletCard/TokenList";
+import PublicKeyDisplay from "./PublicKeyDisplay";
 
 interface WalletOverviewProps {
   onClose?: () => void;
@@ -35,7 +37,8 @@ const WalletOverview = ({
   const [error, setError] = useState<string | null>(null);
   const [totalBalanceUSD, setTotalBalanceUSD] = useState<number>(0);
   const [tokenBalances, setTokenBalances] = useState<TokenWithBalance[]>([]);
-
+  const [solBalance, setSolBalance] = useState<number>(0);
+  console.log(session?.user?.image);
   useEffect(() => {
     const initWeb3Auth = async () => {
       try {
@@ -106,6 +109,7 @@ const WalletOverview = ({
             (token: TokenWithBalance) => parseFloat(token.balance) > 0
           );
           setTokenBalances(nonZeroBalances);
+          console.log("101", data);
           setTotalBalanceUSD(parseFloat(data.totalBalance));
         } catch (error) {
           console.error("Error fetching token balances:", error);
@@ -127,37 +131,31 @@ const WalletOverview = ({
         <SheetHeader className="mb-6">
           <SheetTitle>
             <div className="flex flex-col items-center justify-center">
-              <div className="relative w-24 h-12 flex items-center justify-center space-x-2">
-                <div className="flex items-center space-x-1">
-                  <div className="h-8 w-8  rounded-full">
-                    <Avatar className="h-8 w-14 border-2 border-background">
-                      <AvatarImage
-                        src={"/icons/logo.png"}
-                        alt="User avatar"
-                        className="bg-gray-50 dark:bg-gray-800"
-                      />
-                    </Avatar>
-                  </div>
-                  <div className="h-8 w-8 overflow-hidden rounded-full">
-                    <Avatar className="h-8 w-8 border-2 border-background">
-                      <AvatarImage
-                        src={
-                          session?.user?.image ||
-                          "https://via.placeholder.com/30"
-                        }
-                        alt="User avatar"
-                        className="bg-gray-50 dark:bg-gray-800"
-                      />
-                    </Avatar>
-                  </div>
+              <div className="flex items-center justify-center">
+                <div className="relative flex-shrink-0 rounded-full  bg-white p-[1px]">
+                  <Image
+                    src={"/icons/logo.png"}
+                    alt="TipLink icon"
+                    width={52}
+                    height={52}
+                    className="relative z-10"
+                  />
+                  <div className="absolute right-[-24px] top-0 z-[1] h-7 w-7 rounded-full bg-white dark:bg-gray-950"></div>
                 </div>
+                <Image
+                  src={session?.user?.image!}
+                  alt="User image"
+                  width={28}
+                  height={28}
+                  className="z-[2] ml-[-16px] h-7 w-7 rounded-full bg-gray-50 shadow-sm dark:bg-gray-800"
+                />
               </div>
 
-              <span className="mt-2">Wallet Overview</span>
+              <span className="mt-2">Your Hyperlink Wallet</span>
             </div>
           </SheetTitle>
           <SheetDescription className="flex items-center justify-center">
-            Manage your wallet, send and receive funds
+            <PublicKeyDisplay publicKey={publicKey!} />
           </SheetDescription>
         </SheetHeader>
 
@@ -167,8 +165,7 @@ const WalletOverview = ({
               <CardTitle className="text-sm font-medium">Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0.00 SOL</div>
-              <p className="text-xs text-muted-foreground">≈ $0.00 USD</p>
+              <div className="text-2xl font-bold"> ${totalBalanceUSD} USD</div>
             </CardContent>
           </Card>
 
@@ -185,14 +182,10 @@ const WalletOverview = ({
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Recent Activity
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Tokens</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                No recent transactions
-              </div>
+              <TokenList tokenBalances={tokenBalances} />
             </CardContent>
           </Card>
         </div>

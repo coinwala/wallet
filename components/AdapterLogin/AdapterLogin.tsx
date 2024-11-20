@@ -8,6 +8,7 @@ import { decodeToken, web3auth } from "@/lib/web3auth";
 import { initClients } from "@/lib/client";
 import { handleSignOut } from "@/actions";
 import * as CryptoJS from "crypto-js";
+import prisma from "@/app/db";
 
 type UserInfoProps = {
   session: Session | null;
