@@ -1,16 +1,16 @@
 export interface TokenDetails {
-    name: string;
-    mint: string;
-    symbol: string;
-    decimals: number;
-    logoURI?: string;
-    price?: string;
-    native?: boolean;
+  name: string;
+  mint: string;
+  symbol: string;
+  decimals: number;
+  logoURI?: string;
+  price?: string;
+  native?: boolean;
 }
 
 export interface TokenWithBalance extends TokenDetails {
-    balance: string;
-    usdBalance: string;
+  balance: string;
+  usdBalance: string;
 }
 
 export type AllowedOrigin =
@@ -21,7 +21,7 @@ export type AllowedOrigin =
   | "https://adapter.tiplink.io"
   | "https://tiplink.io";
 
-  export interface MessageData {
+export interface MessageData {
   type: string;
   windowName?: string;
   dAppSessionId?: string;
@@ -30,4 +30,11 @@ export type AllowedOrigin =
   title?: string;
   requestId?: string;
   timestamp?: number;
+  message?: string;
+}
+export interface TransactionDetails {
+  feePayer?: string;
+  recentBlockhash?: string;
+  instructionsCount: number;
+  signatures: (string | undefined)[];
 }
