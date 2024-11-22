@@ -129,7 +129,7 @@ export default function AdapterLogin({ session }: UserInfoProps) {
             // Send public key with retry mechanism
             const message = {
               type: "login_success", // Changed type to be more specific
-              windowName: "default-window",
+              windowName: "",
               publicKey: publicKeyString,
             };
 

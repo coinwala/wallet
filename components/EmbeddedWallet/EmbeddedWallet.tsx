@@ -11,9 +11,16 @@ import Image from "next/image";
 import { FaGoogle } from "react-icons/fa6";
 import WalletOverview from "./WalletOverview";
 import { createMessageId, isAllowedOrigin } from "@/lib/messageUtils";
-import { MessageData } from "@/lib/types";
+import { MessageData, TransactionDetails } from "@/lib/types";
 import { ALLOWED_ORIGINS } from "@/lib/constants";
 import { Session } from "next-auth";
+import { Transaction } from "@solana/web3.js";
+
+// View types enum
+enum ViewType {
+  WALLET = "WALLET",
+  LOGIN = "LOGIN",
+}
 
 const useMessageHandler = () => {
   const parentOriginRef = useRef<string | null>(null);
@@ -28,13 +35,12 @@ const useMessageHandler = () => {
 
     const enrichedMessage = {
       ...message,
-      windowName: "default-window",
+      windowName: "",
       timestamp: Date.now(),
     };
 
     const isDevelopment = process.env.NODE_ENV === "development";
 
-    // In development, always use '*' as the target origin
     if (isDevelopment) {
       try {
         window.parent.postMessage(enrichedMessage, "*");
@@ -45,7 +51,6 @@ const useMessageHandler = () => {
       return;
     }
 
-    // In production, use the stored parent origin or ALLOWED_ORIGINS
     if (parentOriginRef.current) {
       try {
         window.parent.postMessage(enrichedMessage, parentOriginRef.current);
@@ -53,7 +58,6 @@ const useMessageHandler = () => {
         console.warn(`Failed to send to ${parentOriginRef.current}:`, err);
       }
     } else {
-      // Try each allowed origin in production
       let messageSent = false;
       for (const origin of ALLOWED_ORIGINS) {
         try {
@@ -78,7 +82,7 @@ const useMessageHandler = () => {
       sendMessageToParent({
         type: "public_key",
         publicKey,
-        windowName: "default-window",
+        windowName: "",
         timestamp: Date.now(),
         dAppSessionId,
         tipLinkSessionId,
@@ -96,7 +100,6 @@ const useMessageHandler = () => {
   };
 };
 
-// Rest of the component remains the same
 const LoginDialog = ({
   onGoogleLogin,
   handleLoginClose,
@@ -106,7 +109,6 @@ const LoginDialog = ({
   handleLoginClose: () => void;
   showLoginView: boolean;
 }) => (
-  // LoginDialog implementation remains unchanged
   <Dialog onOpenChange={handleLoginClose} defaultOpen={showLoginView}>
     <DialogContent className="relative w-full bg-white px-8 pb-8 pt-10 dark:bg-gray-950 mobile:min-w-[390px] mobile:px-10 sm:max-w-[430px] rounded-xl shadow-lg">
       <div className="mx-auto flex flex-shrink-0 items-center justify-center">
@@ -148,8 +150,7 @@ type UserInfoProps = {
 };
 
 export default function EmbeddedWallet({ session }: UserInfoProps) {
-  const [showWalletView, setShowWalletView] = useState(false);
-  const [showLoginView, setShowLoginView] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.LOGIN);
   const {
     sendMessageToParent,
     sendPublicKey,
@@ -158,11 +159,36 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     publicKeyRef,
   } = useMessageHandler();
 
+  function deserializeTransaction(base64Message: string): Transaction {
+    try {
+      const buffer = Buffer.from(base64Message, "base64");
+      return Transaction.from(buffer);
+    } catch (error) {
+      console.error("Transaction deserialization error:", error);
+      throw error;
+    }
+  }
+
+  function processTransaction(base64Message: string): TransactionDetails {
+    try {
+      const reconstructedTransaction = deserializeTransaction(base64Message);
+      return {
+        feePayer: reconstructedTransaction.feePayer?.toBase58(),
+        recentBlockhash: reconstructedTransaction.recentBlockhash,
+        instructionsCount: reconstructedTransaction.instructions?.length ?? 0,
+        signatures: reconstructedTransaction.signatures.map((sig) =>
+          sig.signature?.toString("base64")
+        ),
+      };
+    } catch (error) {
+      console.error("Transaction processing error:", error);
+      throw error;
+    }
+  }
+
   const handleMessage = useCallback(
     (event: MessageEvent<MessageData>) => {
       const isDevelopment = process.env.NODE_ENV === "development";
-
-      // In development, accept all origins
       if (!isDevelopment && !isAllowedOrigin(event.origin)) {
         console.warn("Unauthorized origin:", event.origin);
         return;
@@ -186,7 +212,7 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         return;
       }
 
-      console.log("Processing message:", event.data);
+      console.log("Processing message:", event);
 
       switch (event.data.type) {
         case "ack":
@@ -220,7 +246,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
         case "click_to_continue":
         case "embedded_login":
-        case "tiplink_autoconnect_from_redirect":
           sendMessageToParent({
             type: `${event.data.type}_received`,
           });
@@ -228,11 +253,35 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
         case "show_wallet":
           console.log("show_wallet");
-          setShowWalletView(true);
+          setCurrentView(ViewType.WALLET);
           sendMessageToParent({
             type: "show_wallet",
-            windowName: "default-window",
+            windowName: "",
           });
+          break;
+
+        case "login_success":
+          console.log("login_success");
+          setCurrentView(ViewType.WALLET);
+          break;
+
+        case "sign_transaction":
+          try {
+            const messageData: MessageData = event.data;
+            if (messageData.message) {
+              const processedTransaction = processTransaction(
+                messageData.message
+              );
+              console.log(
+                "Processed Transaction Details:",
+                processedTransaction
+              );
+            } else {
+              console.error("No transaction message found");
+            }
+          } catch (error) {
+            console.error("Sign transaction error:", error);
+          }
           break;
 
         default:
@@ -246,6 +295,7 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     if (typeof window === "undefined") return;
 
     window.addEventListener("message", handleMessage);
+    console.log("121");
     sendMessageToParent({ type: "ready" });
 
     return () => window.removeEventListener("message", handleMessage);
@@ -258,7 +308,7 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         return;
       }
       sendPublicKey(publicKey);
-      setShowWalletView(true);
+      setCurrentView(ViewType.WALLET);
     },
     [sendPublicKey]
   );
@@ -267,7 +317,7 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     console.log("Initiating Google login");
     sendMessageToParent({
       type: "login_initiated",
-      windowName: "default-window",
+      windowName: "",
     });
 
     const width = 500;
@@ -275,7 +325,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
-    // Add parent origin to the login URL
     const loginUrl = new URL("/embedded_adapter_login", window.location.origin);
     if (parentOriginRef.current) {
       loginUrl.searchParams.set("parentOrigin", parentOriginRef.current);
@@ -306,32 +355,36 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
   }, [sendMessageToParent, handleLoginSuccess]);
 
   const handleOverviewClose = useCallback(() => {
-    setShowWalletView(false);
+    setCurrentView(ViewType.LOGIN);
     sendMessageToParent({
       type: "hide_wallet",
-      windowName: "default-window",
+      windowName: "",
     });
   }, [sendMessageToParent]);
 
   const handleLoginClose = useCallback(() => {
-    setShowLoginView(false);
     sendMessageToParent({
       type: "cancel_connect",
-      windowName: "default-window",
+      windowName: "",
     });
   }, [sendMessageToParent]);
 
-  return showWalletView ? (
-    <WalletOverview
-      showWalletView={showWalletView}
-      onClose={handleOverviewClose}
-      session={session}
-    />
-  ) : (
-    <LoginDialog
-      showLoginView={showLoginView}
-      handleLoginClose={handleLoginClose}
-      onGoogleLogin={handleGoogleLogin}
-    />
-  );
+  const viewComponents: Record<ViewType, () => JSX.Element> = {
+    [ViewType.WALLET]: () => (
+      <WalletOverview
+        showWalletView={currentView === ViewType.WALLET}
+        onClose={handleOverviewClose}
+        session={session}
+      />
+    ),
+    [ViewType.LOGIN]: () => (
+      <LoginDialog
+        showLoginView={currentView === ViewType.LOGIN}
+        handleLoginClose={handleLoginClose}
+        onGoogleLogin={handleGoogleLogin}
+      />
+    ),
+  };
+
+  return viewComponents[currentView]();
 }
