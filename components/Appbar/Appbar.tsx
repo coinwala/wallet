@@ -5,6 +5,12 @@ import { motion } from "framer-motion";
 import Logo from "../icons/Logo";
 import SignIn from "../auth/signin-button";
 import { Menu as MenuIcon, PlugZap, Sparkles, Wallet } from "lucide-react";
+import { Button } from "../ui/button";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import {
+  useWalletModal,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
 
 const transition = {
   type: "spring",
@@ -137,6 +143,8 @@ const Appbar: React.FC = () => {
   const [active, setActive] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const { wallet, publicKey, connected } = useWallet();
+  console.log("wallet", wallet, publicKey);
   const handleMouseEnter = (item: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setActive(item);
@@ -214,7 +222,15 @@ const Appbar: React.FC = () => {
               </MenuItem>
             </Menu>
           </nav>
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
+            <div>
+              <WalletMultiButton
+                style={{ backgroundColor: "black", height: "48px" }}
+              >
+                {!connected && <Wallet />}
+              </WalletMultiButton>
+            </div>
+
             <SignIn />
             <button className="md:hidden ml-4">
               <MenuIcon className="h-6 w-6" />
