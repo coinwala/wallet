@@ -49,7 +49,7 @@ const HyperLinkCard: React.FC = () => {
   const loadHyperLink = useCallback(async () => {
     const hash = window.location.hash.slice(1);
     setUrl(new URL(window.location.href));
-
+    console.log("hash", hash);
     if (hash) {
       const url = `${process.env.NEXT_PUBLIC_HYPERLINK_ORIGIN}#${hash}`;
       try {

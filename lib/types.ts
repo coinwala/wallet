@@ -1,3 +1,6 @@
+/**
+ * Token related interfaces
+ */
 export interface TokenDetails {
   name: string;
   mint: string;
@@ -13,6 +16,9 @@ export interface TokenWithBalance extends TokenDetails {
   usdBalance: string;
 }
 
+/**
+ * Allowed origins for message communication
+ */
 export type AllowedOrigin =
   | "http://localhost:3000"
   | "http://localhost:3001"
@@ -21,6 +27,40 @@ export type AllowedOrigin =
   | "https://adapter.tiplink.io"
   | "https://tiplink.io";
 
+/**
+ * Base transaction details interface
+ */
+export interface BaseTransactionDetails {
+  feePayer?: string;
+  recentBlockhash?: string;
+  instructionsCount: number;
+}
+
+/**
+ * Extended transaction details with additional information
+ */
+export interface ExtendedTransactionDetails extends BaseTransactionDetails {
+  solAmount: number;
+  usdAmount: number;
+  receivingAsset: {
+    name: string;
+    amount: number;
+  };
+  hyperLinkHandle: string;
+  originalMessage: string;
+  transactionHash?: string;
+}
+
+/**
+ * Transaction with confirmed hash
+ */
+export interface TransactionWithHash extends ExtendedTransactionDetails {
+  transactionHash: string;
+}
+
+/**
+ * Message data structure for communication
+ */
 export interface MessageData {
   type: string;
   windowName?: string;
@@ -31,10 +71,32 @@ export interface MessageData {
   requestId?: string;
   timestamp?: number;
   message?: string;
+  status?: string;
+  signedTransaction?: string;
+  error?: string;
+  transactionHash?: string;
+  signed_transaction?: string;
+  signed_message?: string;
 }
-export interface TransactionDetails {
-  feePayer?: string;
-  recentBlockhash?: string;
-  instructionsCount: number;
-  signatures: (string | undefined)[];
+
+/**
+ * Message structure for parent window communication
+ */
+export interface MessageToParent {
+  type: string;
+  status: string;
+  requestId?: string;
+  signedTransaction?: string;
+  windowName?: string;
+  publicKey?: string;
+  error?: string;
+}
+
+/**
+ * Solana price data structure
+ */
+export interface SolanaPrice {
+  solana: {
+    usd: number;
+  };
 }
