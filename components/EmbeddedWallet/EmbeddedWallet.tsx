@@ -2,12 +2,22 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import WalletOverview from "./WalletOverview";
 import { createMessageId, isAllowedOrigin } from "@/lib/messageUtils";
-import { MessageData, TransactionDetails } from "@/lib/types";
+import { ExtendedTransactionDetails, MessageData } from "@/lib/types";
+import nacl from "tweetnacl";
 import { ALLOWED_ORIGINS } from "@/lib/constants";
 import { Session } from "next-auth";
-import { Transaction } from "@solana/web3.js";
-import TransactionDialog from "./TransactionDialog";
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+
 import { LoginDialog } from "./LoginDialog";
+import TransactionDialog from "./TransactionDialog";
+import { getPrivateKey } from "@/lib/client";
+import bs58 from "bs58";
 
 // View types enum
 enum ViewType {
@@ -100,7 +110,11 @@ type UserInfoProps = {
 
 export default function EmbeddedWallet({ session }: UserInfoProps) {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.LOGIN);
-  const [transectionRequestId, setTransactionRequestId] = useState<string>("");
+  const [transactionDetails, setTransactionDetails] =
+    useState<ExtendedTransactionDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentRequestId, setCurrentRequestId] = useState<string>("");
+
   const {
     sendMessageToParent,
     sendPublicKey,
@@ -109,27 +123,211 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     publicKeyRef,
   } = useMessageHandler();
 
-  function deserializeTransaction(base64Message: string): Transaction {
+  const handleTransactionConfirm = useCallback(async () => {
+    setIsLoading(true);
     try {
+      if (!transactionDetails) {
+        throw new Error("No transaction details available");
+      }
+
+      console.log("Starting transaction signing process");
+      console.log("Transaction details:", transactionDetails);
+
+      const keypair = await getKeypair();
+      if (!keypair) {
+        throw new Error("Failed to generate keypair");
+      }
+      console.log("Got keypair:", keypair.publicKey.toBase58());
+
+      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+      const { blockhash } = await connection.getLatestBlockhash();
+
+      let signedTransaction: Transaction;
+
+      try {
+        const transaction = Transaction.from(
+          Buffer.from(transactionDetails.originalMessage, "base64")
+        );
+
+        if (!transaction.feePayer) {
+          transaction.feePayer = keypair.publicKey;
+        }
+
+        transaction.recentBlockhash = blockhash;
+
+        // Sign the transaction
+        transaction.sign(keypair);
+
+        const isVerified = transaction.verifySignatures();
+        if (!isVerified) {
+          throw new Error("Transaction signature verification failed");
+        }
+
+        signedTransaction = transaction;
+      } catch (error) {
+        console.error("Legacy transaction handling failed:", error);
+        throw error;
+      }
+      const signedMessage = signedTransaction.serialize({
+        requireAllSignatures: true,
+        verifySignatures: true,
+      });
+
+      sendMessageToParent({
+        type: "signed_transaction",
+        status: "success",
+        requestId: currentRequestId,
+        signed_transaction: signedMessage.toString("base64"),
+        windowName: "",
+        publicKey: keypair.publicKey.toBase58(),
+      });
+      try {
+        const signature = await connection.sendRawTransaction(signedMessage, {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+        const confirmation = await connection.confirmTransaction(
+          signature,
+          "confirmed"
+        );
+
+        if (confirmation.value.err) {
+          throw new Error(`Transaction failed: ${confirmation.value.err}`);
+        }
+
+        console.log("Transaction sent successfully! Signature:", signature);
+      } catch (sendError) {
+        console.error("Error sending transaction:", sendError);
+        throw new Error(`Failed to send transaction: ${sendError}`);
+      }
+
+      console.log("Transaction signed and sent successfully");
+      setCurrentView(ViewType.WALLET);
+    } catch (error) {
+      console.error("Transaction signing error:", error);
+      console.error(
+        "Error stack:",
+        error instanceof Error ? error.stack : "No stack trace"
+      );
+
+      sendMessageToParent({
+        type: "sign_error",
+        status: "error",
+        requestId: currentRequestId,
+        message:
+          error instanceof Error ? error.message : "Failed to sign transaction",
+        windowName: "",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentRequestId, sendMessageToParent, transactionDetails]);
+
+  function deserializeTransaction(
+    base64Message: string | undefined
+  ): Transaction {
+    try {
+      if (!base64Message) {
+        throw new Error("No transaction message provided");
+      }
+
       const buffer = Buffer.from(base64Message, "base64");
-      return Transaction.from(buffer);
+
+      const transaction = Transaction.from(buffer);
+
+      if (!transaction) {
+        throw new Error("Failed to create transaction from buffer");
+      }
+
+      return transaction;
     } catch (error) {
       console.error("Transaction deserialization error:", error);
-      throw error;
+      throw new Error(
+        `Failed to deserialize transaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
-  function processTransaction(base64Message: string): TransactionDetails {
+  const hexToUint8Array = (hexString: string): Uint8Array => {
+    if (hexString.length % 2 !== 0) {
+      throw new Error("Invalid hex string length");
+    }
+
+    const bytes = new Uint8Array(hexString.length / 2);
+    for (let i = 0; i < hexString.length; i += 2) {
+      bytes[i / 2] = parseInt(hexString.slice(i, i + 2), 16);
+    }
+    return bytes;
+  };
+
+  async function getKeypair(): Promise<Keypair | null> {
+    try {
+      const privateKeyString = await getPrivateKey();
+
+      if (!privateKeyString) {
+        console.error("No private key found");
+        return null;
+      }
+      console.log("transaction", transactionDetails);
+      const secretKey = hexToUint8Array(privateKeyString.toString());
+      console.log("secretKey", Keypair.fromSecretKey(secretKey));
+      return Keypair.fromSecretKey(secretKey);
+    } catch (error) {
+      console.error("Error creating keypair:", error);
+      throw new Error("Invalid private key format");
+    }
+  }
+
+  const handleTransactionCancel = useCallback(() => {
+    sendMessageToParent({
+      type: "transaction_cancelled",
+      status: "cancelled",
+    });
+    setCurrentView(ViewType.WALLET);
+  }, [sendMessageToParent]);
+  function processTransaction(
+    base64Message: string
+  ): ExtendedTransactionDetails {
     try {
       const reconstructedTransaction = deserializeTransaction(base64Message);
+      const transactionInstructions = reconstructedTransaction.instructions;
+      let estimatedSolAmount = 0;
+      try {
+        if (transactionInstructions.length > 0) {
+          const instruction = transactionInstructions[0];
+          if (instruction.programId.equals(SystemProgram.programId)) {
+            const dataView = new DataView(instruction.data.buffer);
+            estimatedSolAmount = Number(dataView.getBigUint64(4, true)) / 1e9;
+          }
+        }
+      } catch (err) {
+        console.warn("Error extracting SOL amount:", err);
+        estimatedSolAmount = 0;
+      }
+
+      const mockSolPrice = 100;
+      const estimatedUsdAmount = estimatedSolAmount * mockSolPrice;
 
       return {
         feePayer: reconstructedTransaction.feePayer?.toBase58(),
         recentBlockhash: reconstructedTransaction.recentBlockhash,
         instructionsCount: reconstructedTransaction.instructions?.length ?? 0,
-        signatures: reconstructedTransaction.signatures.map((sig) =>
-          sig.signature?.toString("base64")
-        ),
+        solAmount: estimatedSolAmount,
+        usdAmount: estimatedUsdAmount,
+        receivingAsset: {
+          name: "SOL",
+          amount: estimatedSolAmount,
+        },
+        hyperLinkHandle: publicKeyRef.current
+          ? `@${publicKeyRef.current.slice(
+              0,
+              4
+            )}...${publicKeyRef.current.slice(-4)}`
+          : "@unknown",
+        originalMessage: base64Message,
       };
     } catch (error) {
       console.error("Transaction processing error:", error);
@@ -219,25 +417,31 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         case "sign_transaction":
           try {
             const messageData: MessageData = event.data;
-            console.log("messageData", messageData);
-            if (messageData.message) {
-              const processedTransaction = processTransaction(
-                messageData.message
-              );
-              setTransactionRequestId(messageData.requestId!);
-              console.log(
-                "Processed Transaction Details:",
-                processedTransaction
-              );
+            if (messageData.message && messageData.requestId) {
+              const processedTx = processTransaction(messageData.message);
+
+              setTransactionDetails({
+                ...processedTx,
+                originalMessage: messageData.message,
+              });
+
+              setCurrentRequestId(messageData.requestId);
               setCurrentView(ViewType.TRANSACTION);
             } else {
-              console.error("No transaction message found");
+              throw new Error("Missing transaction message or requestId");
             }
           } catch (error) {
             console.error("Sign transaction error:", error);
+            if (event.data.requestId) {
+              sendMessageToParent({
+                type: "sign_transaction_response",
+                requestId: event.data.requestId,
+                status: "error",
+                windowName: "",
+              });
+            }
           }
           break;
-
         default:
           console.log("Unhandled message type:", event.data.type);
       }
@@ -338,7 +542,14 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         onGoogleLogin={handleGoogleLogin}
       />
     ),
-    [ViewType.TRANSACTION]: () => <TransactionDialog />,
+    [ViewType.TRANSACTION]: () => (
+      <TransactionDialog
+        onConfirm={handleTransactionConfirm}
+        onCancel={handleTransactionCancel}
+        transactionDetails={transactionDetails || {}}
+        isLoading={isLoading}
+      />
+    ),
   };
 
   return viewComponents[currentView]();
