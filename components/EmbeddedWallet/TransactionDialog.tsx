@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import Image from "next/image";
 
 type TransactionDetailsType = {
   solAmount?: number;
@@ -48,13 +49,19 @@ const TransactionDialog = ({
 
   return (
     <Dialog defaultOpen={true}>
-      <DialogContent className="relative w-full max-w-md bg-slate-900 p-6 text-white rounded-xl">
+      <DialogContent className="relative w-full max-w-md bg-black p-6 text-white rounded-xl">
         <div className="flex justify-center space-x-2 mb-4">
-          <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
+          {/* <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
             <span className="text-xl">T</span>
-          </div>
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-            <span>🔨</span>
+          </div> */}
+          <div className="w-13 h-13  rounded-full flex items-center justify-center">
+            <Image
+              src="/icons/logo.png"
+              alt="logo"
+              width={90}
+              height={90}
+              priority
+            />
           </div>
         </div>
 
@@ -79,7 +86,7 @@ const TransactionDialog = ({
             </div>
           </div>
 
-          <div className="bg-slate-800 p-4 rounded-lg">
+          {/* <div className="bg-slate-800 p-4 rounded-lg">
             <p className="text-sm mb-2">You will receive:</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -90,7 +97,7 @@ const TransactionDialog = ({
               </div>
               <div className="text-green-400">+{receivingAsset.amount}</div>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-slate-800 p-4 rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -106,7 +113,6 @@ const TransactionDialog = ({
           </div>
         </div>
 
-        {/* Additional Details Dropdown */}
         <button
           className="w-full text-center mt-4 text-slate-400 hover:text-white transition-colors"
           onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
@@ -114,7 +120,6 @@ const TransactionDialog = ({
           Additional Details {showAdditionalDetails ? "▲" : "▼"}
         </button>
 
-        {/* Additional Details Content */}
         {showAdditionalDetails && (
           <div className="mt-4 space-y-2 bg-slate-800 p-4 rounded-lg text-sm">
             <div className="flex justify-between">
@@ -143,7 +148,7 @@ const TransactionDialog = ({
             Cancel
           </Button>
           <Button
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+            className="flex-1 bg-white hover:bg-gray-100 text-black"
             onClick={handleConfirm}
             disabled={isLoading}
           >
