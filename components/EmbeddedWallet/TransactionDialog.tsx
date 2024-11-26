@@ -32,6 +32,7 @@ const TransactionDialog = ({
   isLoading = false,
 }: TransactionDialogProps) => {
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const {
     solAmount = 0,
@@ -46,9 +47,14 @@ const TransactionDialog = ({
   const handleConfirm = async () => {
     await onConfirm(transactionDetails);
   };
+  const handleCancel = async () => {
+    setOpen(false);
+    await onCancel();
+  };
 
+  console.log(receivingAsset, transactionDetails);
   return (
-    <Dialog defaultOpen={true}>
+    <Dialog defaultOpen={open} onOpenChange={handleCancel}>
       <DialogContent className="relative w-full max-w-md bg-black p-6 text-white rounded-xl">
         <div className="flex justify-center space-x-2 mb-4">
           {/* <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
