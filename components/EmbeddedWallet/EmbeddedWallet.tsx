@@ -283,10 +283,9 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
   const handleTransactionCancel = useCallback(() => {
     sendMessageToParent({
-      type: "transaction_cancelled",
+      type: "transaction_closed",
       status: "cancelled",
     });
-    setCurrentView(ViewType.WALLET);
   }, [sendMessageToParent]);
   function processTransaction(
     base64Message: string
