@@ -55,7 +55,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
               <motion.div
                 transition={transition}
                 layoutId="active"
-                className="bg-white dark:bg-black backdrop-blur-sm rounded-2xl overflow-hidden border border-black/[0.2] dark:border-white/[0.2] shadow-xl"
+                className=" bg-black backdrop-blur-sm rounded-2xl overflow-hidden border border-black/[0.2] dark:border-white/[0.2] shadow-xl"
               >
                 <motion.div layout className="w-max h-full p-4">
                   {children}
@@ -78,7 +78,7 @@ const Menu: React.FC<MenuProps> = ({ setActive, children }) => {
   return (
     <nav
       onMouseLeave={() => setActive(null)}
-      className="relative rounded-full border border-transparent dark:bg-black dark:border-white/[0.2] bg-white shadow-input flex justify-center space-x-4 px-8 py-2"
+      className="relative rounded-full border border-transparent bg-black dark:border-white/[0.2] bg-white shadow-input flex justify-center space-x-4 px-8 py-2"
     >
       {children}
     </nav>
@@ -151,7 +151,7 @@ const Appbar: React.FC = () => {
   };
 
   return (
-    <header className="w-full py-4 fixed top-0 left-0 right-0 dark:bg-black z-50">
+    <header className="w-full py-4 fixed top-0 left-0 right-0 bg-black z-50">
       <div className="container px-4 mx-auto">
         <div className="flex items-center justify-between md:justify-start md:border md:p-2.5 rounded-xl max-w-2xl lg:max-w-4xl mx-auto md:bg-white/90 dark:md:bg-black/90 md:backdrop-blur-sm">
           <div className="flex items-center">

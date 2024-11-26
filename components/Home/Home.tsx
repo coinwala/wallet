@@ -7,14 +7,18 @@ import CallToAction from "./CallToAction";
 
 export default function Home() {
   return (
-    <div>
-      <Hero />
-      <HeroImage />
-      {/* <LogoTicker /> */}
-      <Feature />
-      <DocsShowcase />
-      {/* <Testimonials /> */}
-      <CallToAction />
+    <div className="relative">
+      <div className="relative z-10">
+        <Hero />
+      </div>
+      <div className="-mt-10 md:-mt-30 lg:-mt-[180px] relative z-10">
+        <HeroImage />
+      </div>
+      <div className="relative z-20">
+        <Feature />
+        <DocsShowcase />
+        <CallToAction />
+      </div>
     </div>
   );
 }
