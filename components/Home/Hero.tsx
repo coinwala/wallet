@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { CardDemo } from "../AnimatedCard";
 import { FaGoogle } from "react-icons/fa6";
 import { signInAction } from "@/lib/signInAction";
+import AnimatedGridSvg from "../ui/beamBG";
 
 export default function Hero() {
   const [isPending, startTransition] = useTransition();
@@ -13,41 +14,58 @@ export default function Hero() {
       signInAction();
     });
   };
+
   return (
-    <section className="items-center  mt-40">
-      <div className="container mx-auto px-4">
-        <div className="max-w-[600px] lg:max-w-[900px] mx-auto">
-          <div>
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <AnimatedGridSvg />
+      </div>
+
+      <div className="container relative z-10 px-4">
+        <div className="max-w-[600px] lg:max-w-[900px] mx-auto text-center">
+          <div className="mb-8">
             <CardDemo />
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter bg-gradient-to-b from-black to-black/70 text-transparent bg-clip-text text-center">
-            Experience the future of crypto today
+
+          <h1
+            className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter 
+            bg-gradient-to-b from-white to-white/70 
+            text-transparent bg-clip-text 
+            mb-4 leading-tight"
+          >
+            Experience the Future of Crypto Today
           </h1>
 
-          <p className="text-lg tracking-tighter text-black/70 text-center mt-5">
-            Effortlessly create a wallet using just your Google Account.
+          <p
+            className="text-lg md:text-xl tracking-tight 
+            text-white/80 
+            max-w-[700px] mx-auto mb-8"
+          >
+            Effortlessly create a wallet using just your Google Account. Secure,
+            simple, and instant access to the crypto world.
           </p>
-        </div>
-        <div className="flex gap-3 items-center justify-center mt-5">
-          <Button
-            onClick={handleSubmit}
-            disabled={isPending}
-            className="flex items-center gap-2 px-[20px] py-[23px]"
-          >
-            {isPending ? "Logging in..." : "Login"}
-            <FaGoogle />
-          </Button>
-          {/* <Button
-            onClick={() => router.push("/create")}
-            className="pl-2 py-6 text-sm md:text-base"
-          >
-            <span className="flex items-center gap-2">
-              <div className="px-[6px] py-[7px] rounded-lg border bg-white text-black">
-                <Logo className="h-2 w-2" />
-              </div>
-              Create Hyper Link
-            </span>
-          </Button> */}
+
+          <div className="flex justify-center">
+            <Button
+              onClick={handleSubmit}
+              disabled={isPending}
+              className="
+                flex items-center gap-3 
+                px-8 py-6 
+                text-base 
+                bg-white/10 
+                backdrop-blur-sm 
+                border border-white/20 
+                hover:bg-white/20 
+                transition-all duration-300 
+                group"
+            >
+              <span className="transition-all duration-300 group-hover:mr-2">
+                {isPending ? "Logging in..." : "Login with"}
+              </span>
+              <FaGoogle className="text-xl transition-transform group-hover:scale-110" />
+            </Button>
+          </div>
         </div>
       </div>
     </section>
