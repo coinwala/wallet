@@ -46,7 +46,7 @@ export default function WalletIntro() {
               transition={{ delay: 0.2 }}
               className="inline-block px-4 py-2 bg-gray-100 rounded-full text-sm font-medium mb-6"
             >
-              Dewlto WALLET
+              DEWLTO WALLET
             </motion.div>
 
             <motion.h1
@@ -55,7 +55,7 @@ export default function WalletIntro() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              The world's simplest wallet
+              Access your secure Dewlto wallet effortlessly
             </motion.h1>
 
             <motion.p
@@ -64,7 +64,7 @@ export default function WalletIntro() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              Create or login to your secured Dewlto wallet with just 2 clicks:
+              set up or sign in instantly with just two clicks!
             </motion.p>
 
             <motion.div
@@ -85,8 +85,6 @@ export default function WalletIntro() {
               </Button>
             </motion.div>
           </motion.div>
-
-          {/* Right side - Wallet Preview */}
           <motion.div
             className="flex-1"
             initial={{ opacity: 0, x: 20 }}

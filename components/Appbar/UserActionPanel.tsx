@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Session } from "next-auth";
 import Logo from "../icons/Logo";
 import SignOut from "../auth/signout-button";
+import Link from "next/link";
 
 export default function UserActionPanel({
   session,
@@ -23,29 +24,43 @@ export default function UserActionPanel({
 }) {
   return (
     <Sheet>
-      <SheetTrigger className="w-full">
-        <div className="flex items-center justify-between w-full p-1 px-2 sm:px-5 rounded-lg border border-gray-400">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              <div className="relative flex select-none items-center justify-center">
-                <Image
-                  width={30}
-                  height={30}
-                  alt="user avatar"
-                  className="rounded-full border border-[#E0E7EB] h-7 w-7 sm:h-9 sm:w-9 min-w-[28px] sm:min-w-[36px]"
-                  src={session?.user?.image || "https://via.placeholder.com/30"}
-                  draggable="false"
-                />
-              </div>
+      <SheetTrigger asChild>
+        <button className=" focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 rounded-lg">
+          <div className="flex gap-2 items-center justify-between w-full p-2 sm:p-2.5 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors duration-200 bg-white">
+            <div className="relative flex-shrink-0">
+              <Image
+                width={28}
+                height={28}
+                alt="User avatar"
+                className="rounded-full border border-gray-200 h-6 w-6 sm:h-7 sm:w-7"
+                src={session?.user?.image || "/api/placeholder/28/28"}
+                draggable={false}
+                priority
+              />
             </div>
-            <Menu size={16} className="sm:w-5 sm:h-5" />
+            <Menu
+              size={18}
+              className="text-gray-500 focus:text-black group-hover:text-black transition-colors duration-200"
+            />
           </div>
-        </div>
+        </button>
       </SheetTrigger>
       <SheetContent className="!p-0 flex flex-col h-full w-full sm:max-w-md">
         <div className="flex-shrink-0">
           <div className="w-max px-5 py-4">
-            <Logo />
+            <Link
+              href="/"
+              className="rounded-lg focus:outline-none focus:ring-2 focus:black/50"
+            >
+              <Image
+                className="rounded-lg"
+                src="/icons/LogoLight.png"
+                alt="logo"
+                width={40}
+                height={40}
+                priority
+              />
+            </Link>
           </div>
 
           {session?.user && (
