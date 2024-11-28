@@ -12,8 +12,7 @@ const FeatureSection = () => {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="md:mt-20 mt-10 max-w-[1000px] mx-auto px-4">
-        {/* Section Header */}
+      <div className=" mt-10 max-w-[100vw] mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -33,24 +32,9 @@ const FeatureSection = () => {
           </p>
         </motion.div>
 
-        {/* Parallax Container */}
-        <motion.div
-          className="my-10 w-full mx-auto"
-          style={{
-            borderTopLeftRadius: borderRadius,
-            borderTopRightRadius: borderRadius,
-          }}
-        >
-          <motion.div
-            className="absolute w-full top-0 left-0 right-0 h-full bg-gradient-to-b from-blue-100 to-white opacity-20"
-            style={{
-              y: backgroundY,
-            }}
-          />
-          <div className="relative w-full z-10">
-            <WalletIntro />
-          </div>
-        </motion.div>
+        <div className="relative w-full z-10">
+          <WalletIntro />
+        </div>
       </div>
     </section>
   );
