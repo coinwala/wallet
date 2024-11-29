@@ -49,7 +49,7 @@ const RightSide: React.FC<RightSideProps> = ({
 
   return (
     <div className="w-1/2 ml-auto overflow-y-auto">
-      <ul className="space-y-10 pb-[100px]">
+      <ul className="space-y-96 pb-[300px]">
         {items.map((item) => (
           <motion.li
             key={item.id}
@@ -64,7 +64,6 @@ const RightSide: React.FC<RightSideProps> = ({
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <motion.div
-              className=""
               initial={{ scale: 0.8 }}
               whileInView={{ scale: 1 }}
               viewport={{ once: false, amount: 0.8 }}

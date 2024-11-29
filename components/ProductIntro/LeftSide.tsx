@@ -43,7 +43,7 @@ const LeftSide: React.FC<LeftSideProps> = ({ activeSection }) => {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [activeSection]); // Add activeSection as a dependency
+  }, [activeSection]);
 
   console.log(activeSection);
 
@@ -57,12 +57,12 @@ const LeftSide: React.FC<LeftSideProps> = ({ activeSection }) => {
       >
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeSection} // Ensure key changes with activeSection
+            key={activeSection}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{
-              duration: 0.5,
+              duration: 0.3,
               ease: "easeInOut",
             }}
             className="h-full flex items-center justify-center p-8"
