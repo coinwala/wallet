@@ -1,10 +1,11 @@
 "use client";
 import React, { useTransition } from "react";
 import { Button } from "../ui/button";
-import { CardDemo } from "../AnimatedCard";
+import { BonkLogo, CardDemo, SolanaLogo, UsdcLogo } from "../AnimatedCard";
 import { FaGoogle } from "react-icons/fa6";
 import { signInAction } from "@/lib/signInAction";
 import AnimatedGridSvg from "../ui/beamBG";
+import Image from "next/image";
 
 export default function Hero() {
   const [isPending, startTransition] = useTransition();
@@ -22,10 +23,15 @@ export default function Hero() {
       </div>
 
       <div className="container relative z-10 px-4">
+        <BonkLogo className="relative left-[10%] lg:left-[30%] h-8 w-8" />
+        <UsdcLogo className="h-8 w-8 relative left-[70%] lg:left-[85%] dark:text-white" />
+
+        <div className=" p-2 border-white  rounded-full bg-black dark:text-white absolute md:right-[20%] right-[10%] lg:right-[28%] rotate-12 md:top-[26%] top-[34%] lg:top-[34%]">
+          <SolanaLogo className="h-8 w-8" />
+        </div>
+
         <div className="max-w-[600px] lg:max-w-[900px] mx-auto text-center">
-          <div className="mb-8">
-            <CardDemo />
-          </div>
+          <div className="mb-8"></div>
 
           <h1
             className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter 

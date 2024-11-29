@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import { World } from "../ui/globe";
 import { globeConfig, sampleArcs } from "@/lib/GlobeConstant";
+import { CardDemo } from "../AnimatedCard";
 
 const AnimatedBeamBorder = () => {
   return (
@@ -175,7 +176,11 @@ const FeatureShowcase = () => {
         title="Swap seamlessly"
         description="Experience lightning-fast swaps with unmatched low fees."
         icon={<ArrowRightLeft color="white" size={24} />}
-      ></FeatureCard>
+      >
+        <div className="flex  items-center justify-center h-full ">
+          <CardDemo />
+        </div>
+      </FeatureCard>
       <FeatureCard
         title="Share Crypto, Simplified"
         description="Send money to anyone instantly with just a link."
@@ -187,7 +192,18 @@ const FeatureShowcase = () => {
         title="Invest Smarter with Curated Token Baskets"
         description="Unlock growth potential with expertly curated token baskets—designed to help you invest with confidence and ease."
         icon={<ShoppingBasket color="white" size={24} />}
-      ></FeatureCard>
+      >
+        <div className="flex  items-center justify-center h-full ">
+          <h1
+            className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tighter 
+            bg-gradient-to-b from-white to-white/70 
+            text-transparent bg-clip-text 
+            mb-4 leading-tight"
+          >
+            Comming Soon
+          </h1>
+        </div>
+      </FeatureCard>
     </div>
   );
 };
