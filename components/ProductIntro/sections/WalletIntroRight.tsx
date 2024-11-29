@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 
 export default function WalletIntroRight() {
   return (
-    <div className="min-h-screen bg-white text-black w-full">
+    <div className="flex justify-center items-center  md:w-1/2  bg-white text-black w-full">
       <div className="mx-auto px-4 py-12 flex items-center justify-center">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           {/* Left side - Content */}
@@ -57,7 +57,18 @@ export default function WalletIntroRight() {
                 className="bg-black text-white hover:bg-gray-800"
               >
                 Continue via Google
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <motion.span
+                  className="ml-2"
+                  initial={{ x: -5 }}
+                  animate={{ x: 0 }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 1,
+                    repeatType: "reverse",
+                  }}
+                >
+                  →
+                </motion.span>
               </Button>
             </motion.div>
           </motion.div>

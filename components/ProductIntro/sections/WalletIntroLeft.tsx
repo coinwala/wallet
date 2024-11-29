@@ -28,7 +28,7 @@ const actions = [
 
 export default function WalletIntroLeft() {
   return (
-    <div>
+    <div className="w-full md:w-1/2 flex justify-center items-center p-8">
       <Card className="bg-white border-gray-200 shadow-lg w-full">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-8">
