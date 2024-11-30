@@ -12,6 +12,7 @@ import {
   LucideIcon,
   Code,
   Newspaper,
+  MessageCircle,
 } from "lucide-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Logo from "../icons/Logo";
@@ -28,14 +29,13 @@ interface SubMenuItem {
 interface NavMenuItem {
   label: string;
   icon: LucideIcon;
-  submenu: SubMenuItem[];
+  submenu?: SubMenuItem[];
 }
 
 const NavbarDesktop = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { connected } = useWallet();
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -93,13 +93,11 @@ const NavbarDesktop = () => {
           description: "Latest insights",
           icon: Newspaper,
         },
-        {
-          title: "Case Studies",
-          href: "/case-studies",
-          description: "Success stories",
-          icon: Code,
-        },
       ],
+    },
+    {
+      label: "FAQ",
+      icon: MessageCircle,
     },
   ];
 
@@ -143,29 +141,30 @@ const NavbarDesktop = () => {
                           exit={{ opacity: 0, y: -10 }}
                           className="absolute top-full left-0 mt-4 w-64 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 p-4"
                         >
-                          {item.submenu.map((subitem) => (
-                            <Link
-                              key={subitem.title}
-                              href={subitem.href}
-                              className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
-                            >
-                              {subitem.icon ? (
-                                <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md mr-3 flex items-center justify-center">
-                                  <subitem.icon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                          {item.submenu &&
+                            item.submenu.map((subitem) => (
+                              <Link
+                                key={subitem.title}
+                                href={subitem.href}
+                                className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
+                              >
+                                {subitem.icon ? (
+                                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md mr-3 flex items-center justify-center">
+                                    <subitem.icon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                                  </div>
+                                ) : (
+                                  <div className="w-10 mr-3" />
+                                )}
+                                <div className="flex flex-col justify-center">
+                                  <p className="font-semibold text-black text-sm group-hover:text-blue-600 leading-tight">
+                                    {subitem.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                    {subitem.description}
+                                  </p>
                                 </div>
-                              ) : (
-                                <div className="w-10 mr-3" />
-                              )}
-                              <div className="flex flex-col justify-center">
-                                <p className="font-semibold text-black text-sm group-hover:text-blue-600 leading-tight">
-                                  {subitem.title}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                                  {subitem.description}
-                                </p>
-                              </div>
-                            </Link>
-                          ))}
+                              </Link>
+                            ))}
                         </motion.div>
                       )}
                     </AnimatePresence>

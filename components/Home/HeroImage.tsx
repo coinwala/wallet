@@ -19,7 +19,7 @@ import { CardDemo } from "../AnimatedCard";
 
 const AnimatedBeamBorder = () => {
   return (
-    <div className="absolute top-0 left-0 right-0 pointer-events-none z-10">
+    <div className="absolute rounded-2xl top-0 left-0 right-0 pointer-events-none z-10">
       <svg
         width="100%"
         height="4"
@@ -210,12 +210,18 @@ const FeatureShowcase = () => {
 
 const HeroImage = () => {
   return (
-    <section className="relative max-w-[1300px] mx-auto px-4 md:mt-20 my-10">
-      <div className="relative p-3 bg-black rounded-2xl overflow-hidden">
-        <AnimatedBeamBorder />
-        <div className="bg-black text-white py-16">
-          <div className="container mx-auto">
-            <FeatureShowcase />
+    <section className="relative rounded-2xl  max-w-[1300px] mx-auto px-4 md:mt-20 my-10">
+      <div
+        className=" inset-0 border-4 border-white/10 rounded-2xl 
+        bg-gradient-to-br from-[#3a3a3a] via-[#1a1a1a] to-[#2a2a2a] 
+        shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]"
+      >
+        <div className="relative p-3 bg-black rounded-2xl overflow-hidden">
+          <AnimatedBeamBorder />
+          <div className="bg-black rounded-2xl text-white py-16">
+            <div className="container rounded-2xl mx-auto">
+              <FeatureShowcase />
+            </div>
           </div>
         </div>
       </div>
