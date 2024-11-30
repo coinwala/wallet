@@ -143,7 +143,7 @@ const WalletOverview = ({
                   <div className="absolute right-[-24px] top-0 z-[1] h-7 w-7 rounded-full bg-white dark:bg-gray-950"></div>
                 </div>
                 <Image
-                  src={session?.user?.image!}
+                  src={session?.user?.image || "/api/placeholder/28/28"}
                   alt="User image"
                   width={28}
                   height={28}

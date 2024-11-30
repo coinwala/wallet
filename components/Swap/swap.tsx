@@ -33,25 +33,27 @@ export function Swap({
       return;
     }
     setFetchingQuote(true);
-    quoteAsset?.address &&
-      baseAsset?.address &&
+
+    // Use an if statement instead of chaining &&
+    if (quoteAsset?.address && baseAsset?.address) {
       axios
         .get(
           `https://quote-api.jup.ag/v6/quote?inputMint=${
-            baseAsset?.address
-          }&outputMint=${quoteAsset?.address}&amount=${
-            Number(baseAmount) * 10 ** baseAsset?.decimals
+            baseAsset.address
+          }&outputMint=${quoteAsset.address}&amount=${
+            Number(baseAmount) * 10 ** baseAsset.decimals
           }&slippageBps=50`
         )
         .then((res) => {
           setQuoteAmount(
             (
-              Number(res.data.outAmount) / Number(10 ** quoteAsset?.decimals)
+              Number(res.data.outAmount) / Number(10 ** quoteAsset.decimals)
             ).toString()
           );
           setFetchingQuote(false);
           setQuoteResponse(res.data);
         });
+    }
   }, [baseAsset, quoteAsset, baseAmount]);
 
   const swapAssets = () => {

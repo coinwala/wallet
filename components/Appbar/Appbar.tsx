@@ -130,49 +130,51 @@ const NavbarDesktop = () => {
                     <button className="flex items-center text-sm font-medium hover:text-blue-600 transition-colors">
                       <item.icon className="mr-2 h-4 w-4" />
                       {item.label}
-                      <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
-                    </button>
-
-                    <AnimatePresence>
-                      {activeMenu === item.label && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute top-full left-0 mt-4 w-64 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 p-4"
-                        >
-                          {item.submenu &&
-                            item.submenu.map((subitem) => (
-                              <Link
-                                key={subitem.title}
-                                href={subitem.href}
-                                className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
-                              >
-                                {subitem.icon ? (
-                                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md mr-3 flex items-center justify-center">
-                                    <subitem.icon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                                  </div>
-                                ) : (
-                                  <div className="w-10 mr-3" />
-                                )}
-                                <div className="flex flex-col justify-center">
-                                  <p className="font-semibold text-black text-sm group-hover:text-blue-600 leading-tight">
-                                    {subitem.title}
-                                  </p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                                    {subitem.description}
-                                  </p>
-                                </div>
-                              </Link>
-                            ))}
-                        </motion.div>
+                      {item.submenu && (
+                        <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
                       )}
-                    </AnimatePresence>
+                    </button>
+                    {item.submenu && (
+                      <AnimatePresence>
+                        {activeMenu === item.label && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 mt-4 w-64 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 p-4"
+                          >
+                            {item.submenu &&
+                              item.submenu.map((subitem) => (
+                                <Link
+                                  key={subitem.title}
+                                  href={subitem.href}
+                                  className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
+                                >
+                                  {subitem.icon ? (
+                                    <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md mr-3 flex items-center justify-center">
+                                      <subitem.icon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-10 mr-3" />
+                                  )}
+                                  <div className="flex flex-col justify-center">
+                                    <p className="font-semibold text-black text-sm group-hover:text-blue-600 leading-tight">
+                                      {subitem.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                      {subitem.description}
+                                    </p>
+                                  </div>
+                                </Link>
+                              ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center gap-1 rounded-lg">
                   <div>

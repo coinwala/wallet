@@ -206,7 +206,8 @@ const HyperLinkCard: React.FC = () => {
       console.log(publicKey, amount, transferAmount);
       handleTransfer(publicKey, amount);
     } catch (error) {
-      toast.error("Invalid public key");
+      console.error("Error:", error);
+      toast.error("Invalid public key:");
     }
   };
 

@@ -13,7 +13,7 @@ export interface TokenApiList {
   mint_authority: string | null;
 }
 
-let cachedTokens: TokenApiList[] | null = null;
+const cachedTokens: TokenApiList[] | null = null;
 export const useFetchTokens = () => {
   const [tokens, setTokens] = useState<TokenApiList[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -28,6 +28,7 @@ export const useFetchTokens = () => {
           setTokens(response.data);
           setLoading(false);
         } catch (err) {
+          console.error("Error fetching token data:", err);
           setError("Error fetching token data");
           setLoading(false);
         }
