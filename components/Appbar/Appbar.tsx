@@ -52,15 +52,15 @@ const NavbarDesktop = () => {
       icon: Zap,
       submenu: [
         {
-          title: "HyperLink Wallet",
+          title: "Dwalto Wallet",
           description: "Non-custodial Solana wallet",
           href: "/products/wallet",
           icon: Wallet,
         },
         {
-          title: "Web3 SDK",
+          title: "Dwalto Wallet Adapter",
           description: "Seamless blockchain integration",
-          href: "/products/sdk",
+          href: "/products/dwalto-wallet-adapter",
           icon: Globe,
         },
       ],

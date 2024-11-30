@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
 import { AnimatedBeam } from "../ui/AnimatedBeam";
@@ -135,6 +135,22 @@ const FeatureCard = ({
 );
 
 const FeatureShowcase = () => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      // Set playback rate to 0.5x speed (slower)
+      videoRef.current.playbackRate = 0.5;
+
+      // Add 1 second delay before starting
+      const timer = setTimeout(() => {
+        videoRef.current?.play();
+      }, 3000);
+
+      // Cleanup timeout on unmount
+      return () => clearTimeout(timer);
+    }
+  }, []);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
@@ -143,13 +159,17 @@ const FeatureShowcase = () => {
           description="Unlock your secure Dwalto wallet instantly and step into the future of finance."
           icon={<Wallet color="white" size={24} />}
         >
-          <div>
-            <Image
-              src={"/assets/images/images/dashboard.png"}
+          <div className="rounded-full">
+            <video
+              className="rounded-lg"
+              ref={videoRef}
+              muted
+              loop
               width={1500}
               height={1000}
-              alt="hyperlink"
-            />
+            >
+              <source src="/assets/video/login.mp4" type="video/mp4" />
+            </video>
           </div>
         </FeatureCard>
       </div>
