@@ -6,7 +6,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import Image from "next/image";
-import { FaGoogle } from "react-icons/fa6";
+import { FcGoogle } from "react-icons/fc";
 export const LoginDialog = ({
   onGoogleLogin,
   handleLoginClose,
@@ -43,7 +43,7 @@ export const LoginDialog = ({
           className="w-full relative h-11 rounded-lg bg-black transition-colors duration-150 ease-linear hover:bg-gray-800"
         >
           <div className="absolute left-[3px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md bg-white">
-            <FaGoogle className="h-5 w-5" />
+            <FcGoogle className="h-5 w-5" />
           </div>
           <h3 className="font-bold text-white pl-7">Login with Google</h3>
         </button>

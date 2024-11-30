@@ -2,10 +2,10 @@
 import React, { useTransition } from "react";
 import { Button } from "../ui/button";
 import { BonkLogo, CardDemo, SolanaLogo, UsdcLogo } from "../AnimatedCard";
-import { FaGoogle } from "react-icons/fa6";
 import { signInAction } from "@/lib/signInAction";
 import AnimatedGridSvg from "../ui/beamBG";
 import Image from "next/image";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Hero() {
   const [isPending, startTransition] = useTransition();
@@ -26,7 +26,7 @@ export default function Hero() {
         <BonkLogo className="relative left-[10%] lg:left-[30%] h-8 w-8" />
         <UsdcLogo className="h-8 w-8 relative left-[70%] lg:left-[85%] dark:text-white" />
 
-        <div className=" p-2 border-white  rounded-full bg-black dark:text-white absolute md:right-[20%] right-[10%] lg:right-[28%] rotate-12 md:top-[26%] top-[34%] lg:top-[34%]">
+        <div className=" p-2 border-white  rounded-full bg-black dark:text-white absolute md:right-[20%] right-[10%] lg:right-[28%] rotate-12 md:top-[30%] top-[34%] lg:top-[45%]">
           <SolanaLogo className="h-8 w-8" />
         </div>
 
@@ -69,7 +69,7 @@ export default function Hero() {
               <span className="transition-all duration-300 group-hover:mr-2">
                 {isPending ? "Logging in..." : "Login with"}
               </span>
-              <FaGoogle className="text-xl transition-transform group-hover:scale-110" />
+              <FcGoogle className="text-xl transition-transform group-hover:scale-110" />
             </Button>
           </div>
         </div>
