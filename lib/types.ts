@@ -100,3 +100,27 @@ export interface SolanaPrice {
     usd: number;
   };
 }
+
+export interface NFTMetadata {
+  mint: string;
+  name: string;
+  uri: string;
+  symbol: string;
+  image: string | undefined;
+  metadataAddress?: string;
+  updateAuthorityAddress?: string;
+  sellerFeeBasisPoints?: number;
+  primarySaleHappened?: boolean;
+  isMutable?: boolean;
+  tokenStandard?: number | null;
+  collection?: {
+    address: string;
+    verified: boolean;
+  } | null;
+  uses?: any;
+  creators?: Array<{
+    address: string;
+    verified?: boolean;
+    share?: number;
+  }>;
+}

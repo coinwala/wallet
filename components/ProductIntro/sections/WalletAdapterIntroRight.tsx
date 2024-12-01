@@ -18,7 +18,7 @@ export default function WalletAdapterIntroRight() {
             <div className="flex gap-1">
               <Link className="w-6 h-6" />
               <span className="flex justify-center items-center text-center">
-                DWLTO WALLET ADAPTER
+                DWALTO WALLET ADAPTER
               </span>
             </div>
           </motion.div>
