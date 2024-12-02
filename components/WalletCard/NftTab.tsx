@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-
+import React from "react";
 import Image from "next/image";
 import { NFTMetadata } from "@/lib/types";
 import MetadataDialog from "./MetadataDialog";
@@ -53,23 +52,27 @@ export default function NftTab({
         {nfts.map((nft) => (
           <div
             key={nft.mint}
-            className="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="group border border-gray-400 shadow-lg relative overflow-hidden rounded-xl cursor-pointer hover:shadow-md transition-shadow hover:border-purple-400"
             onClick={() => setSelectedNft(nft)}
           >
-            {nft.image && (
-              <Image
-                src={nft.image}
-                alt={nft.name}
-                width={200}
-                height={200}
-                className="w-full object-cover rounded-lg"
-              />
-            )}
-            <h3 className="font-semibold text-lg mb-2 mt-4">{nft.name}</h3>
-            {nft.symbol && (
-              <p className="text-sm text-gray-500 mb-2">Symbol: {nft.symbol}</p>
-            )}
-            <p className="text-xs text-gray-400 break-all">Mint: {nft.mint}</p>
+            <div className="absolute inset-0 bg-gradient-to-br  from-purple-400 to-blue-500 rounded-xl transform transition-all duration-300 group-hover:scale-105" />
+            <div className="absolute inset-[2px] bg-white bg-opacity-90 rounded-xl transition-all duration-300 group-hover:inset-0.5" />
+            <div className="relative bg-white bg-opacity-90 rounded-xl p-6 shadow-lg transform transition-all duration-300 group-hover:scale-[1.02]">
+              {nft.image && (
+                <div className="relative w-full pb-[100%] mb-4 overflow-hidden rounded-xl  shadow-md">
+                  <Image
+                    src={nft.image}
+                    alt={nft.name}
+                    layout="fill"
+                    objectFit="cover"
+                    className="transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
+              )}
+              <h3 className="font-bold text-xl mb-2 text-gray-500">
+                {nft.name}
+              </h3>
+            </div>
           </div>
         ))}
       </div>

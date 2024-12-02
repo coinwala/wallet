@@ -113,10 +113,17 @@ export interface NFTMetadata {
   primarySaleHappened?: boolean;
   isMutable?: boolean;
   tokenStandard?: number | null;
+  model?: string;
   collection?: {
     address: string;
     verified: boolean;
   } | null;
+  json?: {
+    description: string;
+    image: string;
+    name: string;
+    symbol: string;
+  };
   uses?: any;
   creators?: Array<{
     address: string;

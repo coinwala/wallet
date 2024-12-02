@@ -42,6 +42,7 @@ export default function AssetTabs({
           }
         );
 
+        console.log(tokenAccounts);
         const nftAccounts = tokenAccounts.value.filter((account) => {
           const tokenAmount = account.account.data.parsed.info.tokenAmount;
           return tokenAmount.decimals === 0 && tokenAmount.amount === "1";
@@ -57,15 +58,22 @@ export default function AssetTabs({
               const metadata = await metaplex
                 .nfts()
                 .findByMint({ mintAddress });
-
+              console.log(metadata);
               // Transform metadata to match our interface
               const transformedMetadata: NFTMetadata = {
                 mint: mintAddress.toString(),
                 name: metadata.name,
+                model: metadata.model,
                 uri: metadata.uri,
                 symbol: metadata.symbol,
                 image: metadata.json?.image,
                 metadataAddress: metadata.metadataAddress.toString(),
+                json: {
+                  description: metadata.json?.description || "",
+                  image: metadata.json?.image || "",
+                  name: metadata.json?.name || "",
+                  symbol: metadata.json?.symbol || "",
+                },
                 updateAuthorityAddress:
                   metadata.updateAuthorityAddress.toString(),
                 sellerFeeBasisPoints: metadata.sellerFeeBasisPoints,
