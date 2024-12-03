@@ -1,6 +1,9 @@
+"use client";
 import { Unplug } from "lucide-react";
 import Image from "next/image";
 import React from "react";
+import { Button } from "../ui/button";
+import { motion } from "framer-motion";
 
 export default function WalletAdapterTile() {
   return (
@@ -40,6 +43,43 @@ export default function WalletAdapterTile() {
             with your Google account while retaining full control of your
             wallet, NFTs, and keys. Your assets, your freedom.
           </p>
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Button size="lg" variant="outline" className="text-black">
+              Learn More
+            </Button>
+            <Button
+              size="lg"
+              className="
+        flex items-center gap-3 
+        px-8 py-3
+        text-base 
+        bg-white/10 
+        backdrop-blur-sm 
+        border border-white/20 
+        hover:bg-white/20 
+        transition-all duration-300 
+        group"
+            >
+              Integrate Now
+              <motion.span
+                className="ml-2"
+                initial={{ x: -5 }}
+                animate={{ x: 0 }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1,
+                  repeatType: "reverse",
+                }}
+              >
+                →
+              </motion.span>
+            </Button>
+          </motion.div>
         </div>
       </div>
     </div>
