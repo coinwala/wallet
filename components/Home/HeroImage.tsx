@@ -102,8 +102,8 @@ const FeatureCard = ({
     backdrop-blur-md
     transition-all
     duration-300
-     w-[30px]
-    h-[30px] 
+     w-[20px]
+    h-[20px] 
     aspect-square
    
   `}
@@ -112,14 +112,14 @@ const FeatureCard = ({
         {icon}
       </div>
     </motion.div>
-    <div className="h-[20rem] rounded-xl z-40 bg-radial-gradient(50%_50%_at_50%_50%,white_0%,transparent_100%)">
-      <div className="p-8 overflow-hidden h-full">{children}</div>
+    <div className="h-[10rem] rounded-xl z-40 bg-radial-gradient(50%_50%_at_50%_50%,white_0%,transparent_100%)">
+      <div className=" overflow-hidden h-full">{children}</div>
     </div>
     <motion.h3
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3, duration: 0.5 }}
-      className="text-lg font-semibold text-white py-2"
+      className="text-xl font-semibold text-white py-2"
     >
       {title}
     </motion.h3>
@@ -127,7 +127,7 @@ const FeatureCard = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.5, duration: 0.5 }}
-      className="text-sm font-normal text-neutral-400 max-w-full"
+      className="text-md font-normal text-neutral-400 max-w-full"
     >
       {description}
     </motion.div>
@@ -152,49 +152,10 @@ const FeatureShowcase = () => {
     }
   }, []);
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
-        <FeatureCard
-          title="Access the world of crypto with just 2 clicks."
-          description="Unlock your secure Dwalto wallet instantly and step into the future of finance."
-          icon={<Wallet color="white" size={24} />}
-        >
-          <div className="rounded-full">
-            <video
-              className="rounded-lg"
-              ref={videoRef}
-              muted
-              loop
-              width={1500}
-              height={1000}
-            >
-              <source src="/assets/video/login.mp4" type="video/mp4" />
-            </video>
-          </div>
-        </FeatureCard>
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <FeatureCard
-        title="Simplify Access to Your Solana App"
-        description="Revolutionize onboarding—instant access to Solana with Google integration."
-        icon={<PlugZap color="white" size={24} />}
-      >
-        <div className="flex flex-col items-center justify-center h-full ">
-          <div className="ml-[65px]">
-            <AnimatedBeam />
-          </div>
-
-          <div className="p-8 flex  items-center justify-center rounded-full border border-[rgba(255,255,255,0.10)] bg-[rgba(40,40,40,0.30)] shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset] group">
-            <FcGoogle className="h-5 w-5 text-white" />
-          </div>
-          <div className="ml-[75px]">
-            <AnimatedBeam2 />
-          </div>
-        </div>
-      </FeatureCard>
-
-      <FeatureCard
-        title="Swap seamlessly"
-        description="Experience lightning-fast swaps with unmatched low fees."
+        title="Swap coins on Solana blockchain seamlessly"
+        description="Effortlessly swap cryptocurrencies within seconds, directly from your wallet—no need for external exchanges. Enjoy lightning-fast transactions with top-tier security, ensuring your assets stay protected at every step"
         icon={<ArrowRightLeft color="white" size={24} />}
       >
         <div className="flex  items-center justify-center h-full ">
@@ -202,27 +163,11 @@ const FeatureShowcase = () => {
         </div>
       </FeatureCard>
       <FeatureCard
-        title="Share Crypto, Simplified"
-        description="Send money to anyone instantly with just a link."
+        title="Sharing crypto made easy via a link"
+        description="Send crypto to anyone with ease—just create a link and share it. No wallet address needed, making transfers simple and secure"
         icon={<Link color="white" size={24} />}
       >
         <World data={sampleArcs} globeConfig={globeConfig} />
-      </FeatureCard>
-      <FeatureCard
-        title="Invest Smarter with Curated Token Baskets"
-        description="Unlock growth potential with expertly curated token baskets—designed to help you invest with confidence and ease."
-        icon={<ShoppingBasket color="white" size={24} />}
-      >
-        <div className="flex  items-center justify-center h-full ">
-          <h1
-            className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tighter 
-            bg-gradient-to-b from-white to-white/70 
-            text-transparent bg-clip-text 
-            mb-4 leading-tight"
-          >
-            Comming Soon
-          </h1>
-        </div>
       </FeatureCard>
     </div>
   );
@@ -238,7 +183,7 @@ const HeroImage = () => {
       >
         <div className="relative p-3 bg-black rounded-2xl overflow-hidden">
           <AnimatedBeamBorder />
-          <div className="bg-black rounded-2xl text-white py-16">
+          <div className="bg-black rounded-2xl text-white py-10">
             <div className="container rounded-2xl mx-auto">
               <FeatureShowcase />
             </div>
