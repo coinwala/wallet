@@ -9,7 +9,7 @@ import WalletAdapterTile from "../featuresTile/WalletAdapterTile";
 
 export default function Home() {
   return (
-    <div className="bg-black">
+    <div className="bg-black ">
       <div className="mt-10 md:mt-30 lg:mt-10 relative z-10">
         <Hero />
       </div>

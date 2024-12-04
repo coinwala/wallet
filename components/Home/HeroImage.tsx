@@ -119,7 +119,7 @@ const FeatureCard = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3, duration: 0.5 }}
-      className="text-xl font-semibold text-white py-2"
+      className="text-2xl font-semibold text-white py-2"
     >
       {title}
     </motion.h3>
@@ -127,7 +127,7 @@ const FeatureCard = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.5, duration: 0.5 }}
-      className="text-md font-normal text-neutral-400 max-w-full"
+      className="text-lg font-normal text-neutral-400 max-w-full"
     >
       {description}
     </motion.div>
@@ -155,7 +155,7 @@ const FeatureShowcase = () => {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <FeatureCard
         title="Swap coins on Solana blockchain seamlessly"
-        description="Effortlessly swap cryptocurrencies within seconds, directly from your wallet—no need for external exchanges. Enjoy lightning-fast transactions with top-tier security, ensuring your assets stay protected at every step"
+        description="Enjoy lightning-fast swaps with top-tier security, ensuring your assets stay protected at every step —Say bye to external exchanges"
         icon={<ArrowRightLeft color="white" size={24} />}
       >
         <div className="flex  items-center justify-center h-full ">

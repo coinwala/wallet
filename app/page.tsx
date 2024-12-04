@@ -8,7 +8,7 @@ export default async function Page() {
   const session = await auth();
 
   return (
-    <div className="flex flex-col gap-[150px]">
+    <div className="flex flex-col ">
       {!session?.idToken ? (
         <>
           <Appbar />

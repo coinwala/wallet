@@ -357,7 +357,6 @@ const HyperLinkCard: React.FC = () => {
     }
   };
 
-  console.log(balance);
   const truncateUrl = (urlString: string, length: number = 16) => {
     if (urlString.length <= length) return urlString;
     return urlString.substring(0, length) + "...";
