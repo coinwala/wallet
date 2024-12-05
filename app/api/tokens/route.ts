@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  clusterApiUrl,
-} from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import axios from "axios";
 
@@ -32,8 +27,9 @@ interface TokenWithBalanceAndPrice {
   price: number;
 }
 
-const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-const JUP_API = "https://tokens.jup.ag/token/";
+const connection = new Connection(
+  "https://devnet.helius-rpc.com/?api-key=028f8594-c025-413e-9f99-9b32498a337d"
+);
 
 async function getTokenAccounts(address: string) {
   const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
@@ -67,11 +63,16 @@ async function getTokenAccounts(address: string) {
   return allTokens;
 }
 
-async function getTokenMetadata(mint: string): Promise<TokenMetadata> {
-  const tokenMetadata = await axios.get<TokenMetadata>(
-    `https://tokens.jup.ag/token/${mint}`
-  );
-  return tokenMetadata.data;
+async function getTokenMetadata(mint: string): Promise<TokenMetadata | null> {
+  try {
+    const tokenMetadata = await axios.get<TokenMetadata>(
+      `https://tokens.jup.ag/token/${mint}`
+    );
+    return tokenMetadata.data;
+  } catch (error) {
+    console.error(`Failed to fetch metadata for mint ${mint}:`, error);
+    return null;
+  }
 }
 
 async function getTokenPrice(
@@ -96,8 +97,7 @@ async function getTokenPrice(
       axios.isAxiosError(error) &&
       error.response?.status === 429
     ) {
-      // Wait and retry with exponential backoff
-      const waitTime = Math.pow(2, 3 - retries) * 1000; // Exponential backoff
+      const waitTime = Math.pow(2, 3 - retries) * 1000;
       console.log(`Rate limited. Waiting ${waitTime}ms before retrying.`);
 
       await new Promise((resolve) => setTimeout(resolve, waitTime));
@@ -146,6 +146,9 @@ export async function GET(req: NextRequest) {
           }
         : await getTokenMetadata(token.mint);
 
+      // If no metadata, return null
+      if (!metadata) return null;
+
       // Get token price
       const price = isNative
         ? await getTokenPrice("solana")
@@ -168,8 +171,10 @@ export async function GET(req: NextRequest) {
       } as TokenWithBalanceAndPrice;
     });
 
-    // Wait for all token details to be processed
-    const tokenDetails = await Promise.all(tokenDetailsPromises);
+    // Wait for all token details to be processed and filter out null results
+    const tokenDetails = (await Promise.all(tokenDetailsPromises)).filter(
+      (token): token is TokenWithBalanceAndPrice => token !== null
+    );
 
     return NextResponse.json({
       tokens: tokenDetails,

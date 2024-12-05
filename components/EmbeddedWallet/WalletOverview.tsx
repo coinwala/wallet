@@ -109,7 +109,6 @@ const WalletOverview = ({
             (token: TokenWithBalance) => parseFloat(token.balance) > 0
           );
           setTokenBalances(nonZeroBalances);
-          console.log("101", data);
           setTotalBalanceUSD(parseFloat(data.totalUsdBalance));
         } catch (error) {
           console.error("Error fetching token balances:", error);
