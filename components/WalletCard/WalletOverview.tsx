@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import {
   Wallet,
   Search,
@@ -17,6 +18,7 @@ import Image from "next/image";
 import FundingOptions from "../AddFunds/FundingOptions";
 import WithdrawOptions from "../WithdrawOptions/WithdrawOptions";
 import { Swap } from "../Swap/swap";
+import io from "socket.io-client";
 
 interface WalletOverviewProps {
   totalBalanceUSD: number;
@@ -78,6 +80,37 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
       <span className="text-[10px] sm:text-xs">{label}</span>
     </Button>
   );
+
+  useEffect(() => {
+    const socket = io("http://localhost:5252");
+
+    // Connect and get initial token details
+    socket.emit("get_token_details", publicKey);
+
+    // Subscribe to periodic updates
+    socket.emit("subscribe_token_updates", publicKey, 30000);
+
+    // Listen for token details
+    socket.on("token_details", (data) => {
+      console.log("Token details:", data);
+    });
+
+    // Listen for token updates
+    socket.on("token_updates", (data) => {
+      console.log("Token updates:", data);
+    });
+
+    // Error handling
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+    });
+
+    return () => {
+      // Unsubscribe and disconnect
+      socket.emit("unsubscribe_token_updates");
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div>

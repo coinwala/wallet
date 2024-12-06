@@ -37,8 +37,6 @@ const WalletOverview = ({
   const [error, setError] = useState<string | null>(null);
   const [totalBalanceUSD, setTotalBalanceUSD] = useState<number>(0);
   const [tokenBalances, setTokenBalances] = useState<TokenWithBalance[]>([]);
-  const [solBalance, setSolBalance] = useState<number>(0);
-  console.log(session?.user?.image);
   useEffect(() => {
     const initWeb3Auth = async () => {
       try {
@@ -121,9 +119,7 @@ const WalletOverview = ({
 
     fetchTokenBalances();
   }, [publicKey]);
-  console.log("tokenBalances", tokenBalances);
-  console.log("publicKey", publicKey);
-  console.log("session", session);
+
   return (
     <Sheet onOpenChange={onClose} open={showWalletView}>
       <SheetContent className="sm:max-w-[425px]">

@@ -17,7 +17,6 @@ import {
 import { LoginDialog } from "./LoginDialog";
 import TransactionDialog from "./TransactionDialog";
 import { getPrivateKey } from "@/lib/client";
-import bs58 from "bs58";
 
 // View types enum
 enum ViewType {
@@ -48,7 +47,6 @@ const useMessageHandler = () => {
     if (isDevelopment) {
       try {
         window.parent.postMessage(enrichedMessage, "*");
-        console.log("Message sent with wildcard origin:", enrichedMessage);
       } catch (err) {
         console.error("Failed to send message:", err);
       }
@@ -131,13 +129,11 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
       }
 
       console.log("Starting transaction signing process");
-      console.log("Transaction details:", transactionDetails);
 
       const keypair = await getKeypair();
       if (!keypair) {
         throw new Error("Failed to generate keypair");
       }
-      console.log("Got keypair:", keypair.publicKey.toBase58());
 
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
@@ -359,8 +355,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         console.warn("Invalid message format");
         return;
       }
-
-      console.log("Processing message:", event);
 
       switch (event.data.type) {
         case "ack":

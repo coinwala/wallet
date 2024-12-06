@@ -8,21 +8,27 @@ import {
   SystemProgram,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bookmark, ChevronRight, Copy, QrCodeIcon, Wallet } from "lucide-react";
+import {
+  Bookmark,
+  Copy,
+  QrCodeIcon,
+  RefreshCw,
+  SendIcon,
+  Wallet,
+  Wifi,
+} from "lucide-react";
 
 import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
-import { Spinner, Tooltip } from "flowbite-react";
+import { Tooltip } from "flowbite-react";
 import WalletModal from "@/components/WalletModal";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Send from "@/components/linkAsWallet/Send";
 import SendHyperlink from "@/components/linkAsWallet/SendHyperlink";
 import { convertUsdToSol } from "@/lib/KeyStore";
 import { Input } from "@/components/ui/input";
-import { LinkPreview } from "@/components/ui/link-preview";
 import { HyperLink } from "@/lib/url";
 
 interface HyperLinkData {
@@ -40,16 +46,15 @@ const HyperLinkCard: React.FC = () => {
   const [url, setUrl] = useState<URL>(new URL(window.location.href));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
-  const [step, setStep] = useState<number>(0);
+  const [step, setStep] = useState<number>(1);
   const [transferAmount, setTransferAmount] = useState<string>("");
   const [recipentPublicKey, setRecipentPublicKey] = useState<string>("");
-
+  const [copied, setCopied] = useState(false);
   const { publicKey } = useWallet();
 
   const loadHyperLink = useCallback(async () => {
     const hash = window.location.hash.slice(1);
     setUrl(new URL(window.location.href));
-    console.log("hash", hash);
     if (hash) {
       const url = `${process.env.NEXT_PUBLIC_HYPERLINK_ORIGIN}#${hash}`;
       try {
@@ -78,8 +83,8 @@ const HyperLinkCard: React.FC = () => {
       const balanc = await connection.getBalance(
         hyperlinkInstance.keypair.publicKey
       );
+      console.log("12", hyperlinkInstance.keypair.publicKey.toBase58());
       const solBalance = balanc / LAMPORTS_PER_SOL;
-      console.log("12", balanc);
       setBalance(solBalance);
       const response = await fetch(
         "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
@@ -95,18 +100,8 @@ const HyperLinkCard: React.FC = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(url.href);
     toast("Copied to clipboard");
-  };
-
-  const handleBookmark = () => {
-    if ("AddFavorite" in window) {
-      (window as any).AddFavorite(window.location.href, "HyperLink");
-    } else {
-      toast(
-        `Press ${
-          navigator.userAgent.toLowerCase().includes("mac") ? "Cmd" : "Ctrl"
-        } + D to bookmark this page.`
-      );
-    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const completeAmount = async () => {
@@ -203,7 +198,6 @@ const HyperLinkCard: React.FC = () => {
       }
       const amt = await convertUsdToSol(transferAmount);
       const amount = Number(amt) * LAMPORTS_PER_SOL;
-      console.log(publicKey, amount, transferAmount);
       handleTransfer(publicKey, amount);
     } catch (error) {
       console.error("Error:", error);
@@ -213,7 +207,7 @@ const HyperLinkCard: React.FC = () => {
 
   const handleTransferToPersonalWallet = async () => {
     if (!publicKey || !balance || !hyperlink) {
-      toast.error("Missing required information for transfer.");
+      toast.error("Wallet not connected.");
       return;
     }
     const amount = balance * LAMPORTS_PER_SOL;
@@ -225,7 +219,6 @@ const HyperLinkCard: React.FC = () => {
       toast.error("Missing required information for transfer.");
       return;
     }
-    console.log("balance", balance);
     setIsLoading(true);
 
     try {
@@ -271,46 +264,6 @@ const HyperLinkCard: React.FC = () => {
 
   const handleSteps = (step: number) => {
     switch (step) {
-      case 0:
-        return (
-          <div className="flex w-full flex-col justify-start space-y-5 xs:space-y-0 xs:flex-row xs:space-x-10">
-            <Button
-              onClick={completeAmount}
-              className="flex justify-between text-base font-medium p-10 xs:w-full xs:text-base"
-            >
-              <div className="flex items-start justify-start gap-[10px]">
-                <div className="flex items-center justify-center align-middle mt-2 rounded-full bg-grey-50 xs:p-3">
-                  <Wallet />
-                </div>
-                <div className="flex-col items-start justify-start rounded-full bg-grey-50 xs:p-3">
-                  <div className="text-left">Recreate this Hyperlink</div>
-                  <div className="text-left text-xs font-normal text-grey-500">
-                    Move the entire value to a new Hyperlink so only you have
-                    the link.
-                  </div>
-                </div>
-              </div>
-              {isLoading ? <Spinner /> : <ChevronRight />}
-            </Button>
-            <Button
-              onClick={handleTransferToPersonalWallet}
-              className="flex justify-between text-base font-medium p-10 xs:w-full xs:text-base"
-            >
-              <div className="flex items-start justify-start gap-[10px]">
-                <div className="flex items-center justify-center align-middle mt-2 rounded-full bg-grey-50 xs:p-3">
-                  <Wallet />
-                </div>
-                <div className="flex-col items-start justify-start rounded-full bg-grey-50 xs:p-3">
-                  <div className="text-left">Withdraw to your wallet</div>
-                  <div className="text-left text-xs font-normal text-grey-500">
-                    Withdraw the entire value to your connected wallet.
-                  </div>
-                </div>
-              </div>
-              <ChevronRight />
-            </Button>
-          </div>
-        );
       case 1:
         return <Send setStep={setStep} />;
       case 2:
@@ -357,123 +310,109 @@ const HyperLinkCard: React.FC = () => {
     }
   };
 
-  const truncateUrl = (urlString: string, length: number = 16) => {
-    if (urlString.length <= length) return urlString;
-    return urlString.substring(0, length) + "...";
-  };
   return (
-    <div className="flex flex-col  m-10">
-      <div>
-        <Card className="w-full h-full max-w-xl mx-auto my-10">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold flex items-center justify-center">
-              This is ${usdBalance?.toFixed(2)} in crypto
-            </CardTitle>
-          </CardHeader>
+    <div className="flex justify-center items-center">
+      <Card className=" flex-col flex justify-center items-center my-10">
+        <CardContent className="p-6 space-y-6">
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={() => setShowQrModal(true)}
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+            >
+              <QrCodeIcon className="w-4 h-4 mr-2" />
+              QR code
+            </Button>
+          </div>
 
-          <CardContent className="space-y-4">
-            <p className="text-lg font-thin text-center">
-              {
-                "The link to this page contains this value. Make sure you don'tlose it!"
-              }
-            </p>
-            <div className="flex justify-center items-center">
-              <LinkPreview
-                isStatic
-                imageSrc="/assets/images/preview.png"
-                url={url.href}
-              >
-                <Badge
-                  onClick={handleCopy}
-                  className="text-lg p-2 px-4 cursor-pointer"
-                >
-                  {truncateUrl(url.href, 32)}
-                </Badge>
-              </LinkPreview>
-            </div>
-            <div className="flex justify-center items-center gap-3">
-              <Button onClick={handleCopy} className="h-[80px]">
-                <div className="flex flex-col items-center px-10 p-15">
-                  <Copy />
-                  <span>Copy</span>
-                </div>
-              </Button>
-              <Button onClick={handleBookmark} className="h-[80px]">
-                <div className="flex flex-col items-center px-10 p-15">
-                  <Bookmark />
-                  <span>Bookmark</span>
-                </div>
-              </Button>
-              <Button className="h-[80px]">
-                <div className="flex flex-col items-center px-10 p-15">
-                  <QrCodeIcon />
-                  <span>QR code</span>
-                </div>
-              </Button>
-            </div>
-            {balance !== null && (
-              <div
-                className="rounded-xl shadow-lg p-6 flex flex-row justify-between"
-                style={{
-                  backgroundImage: `url(./assets/images/images/background.jpg)`,
-                }}
-              >
-                <div className="flex flex-col items-start">
-                  <div className="mt-10">
-                    <h1 className="text-[4rem] leading-none font-bold">Your</h1>
-                    <h1 className="text-[4rem] leading-none font-bold">
-                      Balance
-                    </h1>
+          {balance !== null && (
+            <div className="space-y-6">
+              <div className="rounded-xl relative shadow-lg p-6 flex flex-col justify-between w-full h-auto min-h-[16rem] bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-2xl font-bold mb-1">Your Balance</h1>
+                    <p className="text-sm opacity-75">Solana Wallet</p>
                   </div>
-                  <div className="mt-10">
-                    <Tooltip
-                      className="bg-black text-white rounded-full"
-                      content={url.hash}
-                    >
-                      <Badge onClick={handleCopy} className="text-lg">
-                        {truncateUrl(url.hash)}
-                      </Badge>
-                    </Tooltip>
-                  </div>
+                  <Button
+                    onClick={handleCopy}
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-8 w-8 bg-white/10 hover:bg-white/20 transition-colors"
+                    aria-label={copied ? "Copied" : "Copy balance"}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
                 </div>
-                <div>
-                  <div className="text-center mt-[5rem]">
-                    <p className="text-pink-400">{balance.toFixed(4)} SOL</p>
+
+                <div className="flex justify-between items-end mt-8">
+                  <div>
+                    <p className="text-lg font-medium mb-1">
+                      {balance.toFixed(2)} SOL
+                    </p>
                     {usdBalance !== null && (
-                      <h1 className="text-4xl">${usdBalance.toFixed(2)}</h1>
+                      <h1 className="text-3xl font-bold">
+                        ${usdBalance.toFixed(2)}
+                      </h1>
                     )}
                   </div>
-                  <div className="flex justify-end mt-[5rem]">
-                    <p className="text-gray-400 text-xs">
-                      POWERED BY Hyperlink
-                    </p>
+                  <div className="text-right">
+                    <div className="flex items-center justify-end mb-1">
+                      <Wifi className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs opacity-75">POWERED BY</p>
+                    <p className="text-sm font-semibold">Hyperlink</p>
                   </div>
                 </div>
               </div>
-            )}
-            <div className="flex justify-center items-center gap-3">
-              <Button onClick={() => setStep(1)} className="w-full">
-                Send
-              </Button>
-              <Button onClick={() => setShowQrModal(true)} className="w-full">
-                Receive
-              </Button>
 
-              {showQrModal && hyperlink?.keypair?.publicKey && (
-                <WalletModal
-                  isVisible={showQrModal}
-                  onClose={() => setShowQrModal(false)}
-                  publicKey={hyperlink?.keypair?.publicKey
-                    .toBase58()
-                    .toString()}
-                />
-              )}
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={() => setStep(1)}
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                >
+                  <SendIcon className="w-5 h-5 mr-2" />
+                  Send
+                </Button>
+                <Button
+                  onClick={completeAmount}
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                >
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Create new link
+                </Button>
+                <Button
+                  onClick={handleTransferToPersonalWallet}
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                >
+                  <Wallet className="w-5 h-5 mr-2" />
+                  Transfer
+                </Button>
+              </div>
             </div>
-            <Separator className="my-10" />
-            <div>{handleSteps(step)}</div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+
+          <div className="mt-6">{handleSteps(step)}</div>
+
+          {showQrModal && hyperlink?.keypair?.publicKey && (
+            <WalletModal
+              isVisible={showQrModal}
+              onClose={() => setShowQrModal(false)}
+              publicKey={hyperlink?.keypair?.publicKey.toBase58().toString()}
+            />
+          )}
+        </CardContent>
+        <p className="text-sm text-muted-foreground text-center p-4 border-t">
+          The link to this page contains this value. Make sure you don't lose
+          it!
+        </p>
+      </Card>
     </div>
   );
 };
