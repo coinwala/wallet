@@ -81,37 +81,6 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
     </Button>
   );
 
-  useEffect(() => {
-    const socket = io("http://localhost:5252");
-
-    // Connect and get initial token details
-    socket.emit("get_token_details", publicKey);
-
-    // Subscribe to periodic updates
-    socket.emit("subscribe_token_updates", publicKey, 30000);
-
-    // Listen for token details
-    socket.on("token_details", (data) => {
-      console.log("Token details:", data);
-    });
-
-    // Listen for token updates
-    socket.on("token_updates", (data) => {
-      console.log("Token updates:", data);
-    });
-
-    // Error handling
-    socket.on("error", (error) => {
-      console.error("Socket error:", error);
-    });
-
-    return () => {
-      // Unsubscribe and disconnect
-      socket.emit("unsubscribe_token_updates");
-      socket.disconnect();
-    };
-  }, []);
-
   return (
     <div>
       <Card className="rounded-xl bg-white p-4 sm:p-8">
