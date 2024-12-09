@@ -160,7 +160,10 @@ const WalletOverview = ({
               <CardTitle className="text-sm font-medium">Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold"> ${totalBalanceUSD} USD</div>
+              <div className="text-2xl font-bold">
+                {" "}
+                ${totalBalanceUSD.toFixed(2)} USD
+              </div>
             </CardContent>
           </Card>
 
