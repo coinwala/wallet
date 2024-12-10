@@ -24,7 +24,7 @@ export default function WalletTile() {
               <span className="py-2 px-2 max-w-fit flex items-center rounded-lg border border-[rgba(255,255,255,0.10)] shadow-[2px_4px_16px_0px_rgba(248,248,248,0.06)_inset]group backdrop-blur-md transition-all duration-300 ">
                 <p className="text-xl font-semibold text-white flex items-center gap-2">
                   <Wallet className="h-5 w-5 " />
-                  WAllET
+                  WALLET
                 </p>
               </span>
             </span>

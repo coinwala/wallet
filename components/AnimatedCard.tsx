@@ -61,12 +61,12 @@ const Skeleton = () => {
   ];
 
   useEffect(() => {
-    // @ts-expect-error - The animate function from framer-motion expects a more specific type than what we're providing
     animate(sequence, {
+      // @ts-expect-error ts-migrate(2339) FIXME: Property 'duration' does not exist on type 'never'.
       repeat: Infinity,
       repeatDelay: 1,
     });
-  }, [sequence]); // Include sequence in the dependency array
+  }, []);
   return (
     <div className="p-8 overflow-hidden h-full relative flex items-center justify-center">
       <div className="flex flex-row flex-shrink-0 justify-center items-center gap-2">
