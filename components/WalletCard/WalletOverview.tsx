@@ -34,7 +34,7 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
   session,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("assets");
-
+  console.log("tokenBalances", tokenBalances);
   const renderTabContent = () => {
     switch (activeTab) {
       case "assets":
@@ -55,7 +55,10 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
         );
       case "swap":
         return (
-          <div>{/* <Swap tokenBalances={tokenBalances,tokenBalances}/> */}</div>
+          <div>
+            {" "}
+            <Swap tokenBalances={tokenBalances} />{" "}
+          </div>
         );
       default:
         return null;

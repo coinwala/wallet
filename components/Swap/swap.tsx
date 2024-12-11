@@ -1,40 +1,41 @@
 "use client";
 import { ReactNode, useEffect, useState } from "react";
-
 import axios from "axios";
 
 import { TokenApiList, useFetchTokens } from "@/app/hooks/useFetchTokens";
 import { TokenListDialog } from "./TokenListDialog";
-import { TokenWithBalance } from "@/app/hooks/useTokens";
 import { Button } from "../ui/button";
+import { TokenWithBalance } from "@/lib/types";
 
-export function Swap({
-  tokenBalances,
-}: {
-  tokenBalances: {
-    totalBalance: number;
-    tokens: TokenWithBalance[];
-  } | null;
-}) {
+interface SwapProps {
+  tokenBalances: TokenWithBalance[]; // Changed to array
+}
+
+export function Swap({ tokenBalances }: SwapProps) {
   const { tokens, loading, error } = useFetchTokens();
-  const [baseAsset, setBaseAsset] = useState(tokens?.[0]);
-  const [quoteAsset, setQuoteAsset] = useState(tokens?.[1]);
-  const [baseAmount, setBaseAmount] = useState<string>();
-  const [quoteAmount, setQuoteAmount] = useState<string>();
+  const [baseAsset, setBaseAsset] = useState<TokenApiList | undefined>(
+    tokens?.[0]
+  );
+  const [quoteAsset, setQuoteAsset] = useState<TokenApiList | undefined>(
+    tokens?.[1]
+  );
+  const [baseAmount, setBaseAmount] = useState<string>("");
+  const [quoteAmount, setQuoteAmount] = useState<string>("");
   const [fetchingQuote, setFetchingQuote] = useState(false);
-  const [quoteResponse, setQuoteResponse] = useState(null);
+  const [quoteResponse, setQuoteResponse] = useState<any>(null);
 
   useEffect(() => {
     setBaseAsset(tokens?.[0]);
     setQuoteAsset(tokens?.[1]);
   }, [tokens]);
+
   useEffect(() => {
     if (!baseAmount) {
+      setQuoteAmount("");
       return;
     }
     setFetchingQuote(true);
 
-    // Use an if statement instead of chaining &&
     if (quoteAsset?.address && baseAsset?.address) {
       axios
         .get(
@@ -52,6 +53,10 @@ export function Swap({
           );
           setFetchingQuote(false);
           setQuoteResponse(res.data);
+        })
+        .catch((error) => {
+          console.error("Quote fetch error:", error);
+          setFetchingQuote(false);
         });
     }
   }, [baseAsset, quoteAsset, baseAmount]);
@@ -61,7 +66,14 @@ export function Swap({
     setBaseAsset(quoteAsset);
     setQuoteAsset(temp);
   };
-  console.log("tokenBalanceswewe", baseAmount);
+
+  // Helper function to get token balance
+  const getTokenBalance = (symbol?: string) => {
+    if (!tokenBalances || !symbol) return "0";
+    const token = tokenBalances.find((t) => t.symbol === symbol);
+    return token?.balance || "0";
+  };
+
   return (
     <div className="pl-4 pt-12 pb-12 bg-slate-50">
       <div className="text-2xl font-bold pb-4">Swap Tokens</div>
@@ -82,11 +94,7 @@ export function Swap({
           <div className="text-slate-500 pt-1 text-sm pl-1 flex">
             <div className="font-normal pr-1">Current Balance:</div>
             <div className="font-semibold">
-              {
-                tokenBalances?.tokens.find((x) => x.name === baseAsset?.symbol)
-                  ?.balance
-              }{" "}
-              {baseAsset?.symbol}
+              {getTokenBalance(baseAsset?.symbol)} {baseAsset?.symbol}
             </div>
           </div>
         }
@@ -94,9 +102,7 @@ export function Swap({
 
       <div className="flex justify-center">
         <div
-          onClick={() => {
-            swapAssets();
-          }}
+          onClick={swapAssets}
           className="cursor-pointer rounded-full w-10 h-10 border absolute mt-[-20px] bg-white flex justify-center pt-2"
         >
           <SwapIcon />
@@ -120,7 +126,6 @@ export function Swap({
       <div className="flex justify-end pt-4">
         <Button
           onClick={async () => {
-            // trigger swap
             try {
               const res = await axios.post("/api/swap", {
                 quoteResponse,
@@ -153,10 +158,7 @@ function SwapInputRow({
   inputDisabled,
   inputLoading,
 }: {
-  tokenBalances: {
-    totalBalance: number;
-    tokens: TokenWithBalance[];
-  } | null;
+  tokenBalances: TokenWithBalance[]; // Changed to array
   onSelect: (asset: TokenApiList) => void;
   selectedToken?: TokenApiList;
   title: string;
@@ -167,9 +169,15 @@ function SwapInputRow({
   onAmountChange?: (value: string) => void;
   inputDisabled?: boolean;
   inputLoading?: boolean;
-  tokenList?: TokenApiList[];
 }) {
   const [insufficientFunds, setInsufficientFunds] = useState<boolean>(false);
+
+  // Helper function to get token balance
+  const getTokenBalance = () => {
+    if (!tokenBalances || !selectedToken) return "0";
+    const token = tokenBalances.find((t) => t.symbol === selectedToken.symbol);
+    return token?.balance || "0";
+  };
 
   return (
     <div
@@ -190,16 +198,12 @@ function SwapInputRow({
               disabled={inputDisabled}
               onChange={(e) => {
                 onAmountChange?.(e.target.value);
-                const balance = parseFloat(
-                  tokenBalances?.tokens.find(
-                    (x) => x.name === selectedToken?.name
-                  )?.balance ?? "0"
-                );
+                const balance = getTokenBalance();
                 const validAmount =
                   e.target.value !== undefined
                     ? parseFloat(e.target.value)
                     : NaN;
-                const insufficientFunds = balance < validAmount;
+                const insufficientFunds = parseFloat(balance) < validAmount;
                 setInsufficientFunds(insufficientFunds);
               }}
               placeholder="0"
@@ -255,13 +259,13 @@ function SwapIcon() {
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
-      stroke-width="1.5"
+      strokeWidth="1.5"
       stroke="currentColor"
       className="size-6"
     >
       <path
         strokeLinecap="round"
-        stroke-linejoin="round"
+        strokeLinejoin="round"
         d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"
       />
     </svg>
