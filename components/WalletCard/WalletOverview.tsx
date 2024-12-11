@@ -57,7 +57,7 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
         return (
           <div>
             {" "}
-            <Swap tokenBalances={tokenBalances} />{" "}
+            <Swap tokenBalances={tokenBalances} />
           </div>
         );
       default:

@@ -118,8 +118,8 @@ export default function Hero() {
               ref={videoRef}
               muted
               loop
-              width={400}
-              height={650}
+              width={360}
+              height={580}
             >
               <source src="/assets/video/mobileLogin.mp4" type="video/mp4" />
             </video>

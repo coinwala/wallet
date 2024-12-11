@@ -10,9 +10,6 @@ declare module "next-auth" {
   }
 }
 
-console.log("DEBUG: NEXTAUTH_SECRET exists:", !!process.env.NEXTAUTH_SECRET);
-console.log("DEBUG: Secret value type:", typeof process.env.NEXTAUTH_SECRET);
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({

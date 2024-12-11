@@ -18,6 +18,7 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Logo from "../icons/Logo";
 import SignIn from "../auth/signin-button";
 import { useWallet } from "@solana/wallet-adapter-react";
+import CoinwalaLogo from "../CoinWala";
 
 interface SubMenuItem {
   title: string;
@@ -114,7 +115,7 @@ const NavbarDesktop = () => {
           <div className="container mx-auto px-4 py-3">
             <nav className="flex items-center justify-between">
               <div className="flex items-center">
-                <Logo />
+                <CoinwalaLogo width="250" height="60" />
               </div>
 
               <div
