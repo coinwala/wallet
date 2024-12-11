@@ -10,11 +10,14 @@ declare module "next-auth" {
   }
 }
 
+console.log("DEBUG: NEXTAUTH_SECRET exists:", !!process.env.NEXTAUTH_SECRET);
+console.log("DEBUG: Secret value type:", typeof process.env.NEXTAUTH_SECRET);
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
       authorization: {
         params: {
           prompt: "consent",
@@ -24,13 +27,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET, // Try both secrets as fallback
   trustHost: true,
   session: {
     strategy: "jwt",
   },
   callbacks: {
-    // get the idToken
     async jwt({ token, account }) {
       if (account) {
         token.idToken = account.id_token;
