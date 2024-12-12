@@ -6,9 +6,9 @@ import Home from "@/components/Home/Home";
 
 export default async function Page() {
   const session = await auth();
-
-  if (session?.idToken) {
-    <LoginAppbar session={session} />;
+  console.log(session);
+  if (session) {
+    return <LoginAppbar session={session} />;
   }
 
   return (
