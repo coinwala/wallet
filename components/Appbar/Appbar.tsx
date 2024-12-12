@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,9 +16,10 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import SignIn from "../auth/signin-button";
 import { useWallet } from "@solana/wallet-adapter-react";
-import CoinwalaLogo from "../CoinWala";
+
+const SignIn = dynamic(() => import("../auth/signin-button"), { ssr: false });
+const CoinwalaLogo = dynamic(() => import("../CoinWala"), { ssr: false });
 
 interface SubMenuItem {
   title: string;
@@ -39,16 +41,19 @@ const NavbarResponsive = () => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsVisible(window.scrollY === 0);
-      if (isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-        setActiveMenu(null);
-      }
-    };
+    // Ensure window is defined before accessing it
+    if (typeof window !== "undefined") {
+      const handleScroll = () => {
+        setIsVisible(window.scrollY === 0);
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+          setActiveMenu(null);
+        }
+      };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => window.removeEventListener("scroll", handleScroll);
+    }
   }, [isMobileMenuOpen]);
 
   const menuItems: NavMenuItem[] = [

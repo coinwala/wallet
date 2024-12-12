@@ -6,7 +6,6 @@ import Home from "@/components/Home/Home";
 
 export default async function Page() {
   const session = await auth();
-  console.log(session);
   if (session) {
     return <LoginAppbar session={session} />;
   }
@@ -15,7 +14,7 @@ export default async function Page() {
     <div className="flex flex-col">
       <Appbar />
       <Home />
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }
