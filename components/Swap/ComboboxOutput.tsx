@@ -126,7 +126,9 @@ export function ComboboxOutput({
 
                       <p className=" flex gap-1 !ml-2 !min-h-fit !p-1 !text-[10px] !leading-none bg-gray-300  !text-grey-700 rounded-lg">
                         {" "}
-                        {truncateAddress(selectedToken?.address?.toString())}
+                        {truncateAddress(
+                          selectedToken?.address?.toString() || ""
+                        )}
                         <ArrowUpRight className="h-[10px] w-[15px] " />
                       </p>
                     </span>
@@ -162,7 +164,9 @@ export function ComboboxOutput({
 
                         <p className=" flex gap-1 !ml-2 !min-h-fit !p-1 !text-[10px] !leading-none bg-gray-300  !text-grey-700 rounded-lg">
                           {" "}
-                          {truncateAddress(selectedToken?.address?.toString()!)}
+                          {truncateAddress(
+                            selectedToken?.address?.toString() || ""
+                          )}
                           <ArrowUpRight className="h-[10px] w-[15px] " />
                         </p>
                       </span>
