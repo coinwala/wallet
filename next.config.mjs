@@ -1,6 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        source: '/inject.js',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          }
+        ],
+      }
+    ];
+  },
   images: {
     remotePatterns: [
       {

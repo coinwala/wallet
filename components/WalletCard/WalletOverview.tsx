@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import {
   Wallet,
   Search,
@@ -17,6 +18,7 @@ import Image from "next/image";
 import FundingOptions from "../AddFunds/FundingOptions";
 import WithdrawOptions from "../WithdrawOptions/WithdrawOptions";
 import { Swap } from "../Swap/swap";
+import io from "socket.io-client";
 
 interface WalletOverviewProps {
   totalBalanceUSD: number;

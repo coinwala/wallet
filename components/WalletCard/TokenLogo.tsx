@@ -11,7 +11,7 @@ const TokenLogo: React.FC<TokenLogoProps> = ({ src, alt }) => {
   const [imgSrc, setImgSrc] = useState(src);
 
   return (
-    <Image
+    <img
       src={imgSrc}
       alt={alt}
       width={24}

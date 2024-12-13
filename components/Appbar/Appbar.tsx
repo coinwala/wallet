@@ -1,229 +1,202 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Wallet,
+  Book,
+  ChevronDown,
+  Settings,
+  Globe,
+  Zap,
+  LucideIcon,
+  Code,
+  Newspaper,
+  MessageCircle,
+} from "lucide-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import Logo from "../icons/Logo";
 import SignIn from "../auth/signin-button";
-import { Menu as MenuIcon, PlugZap, Sparkles, Wallet } from "lucide-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 
-const transition = {
-  type: "spring",
-  mass: 0.5,
-  damping: 11.5,
-  stiffness: 100,
-  restDelta: 0.001,
-  restSpeed: 0.001,
-};
-
-interface MenuItemProps {
-  setActive: (item: string) => void;
-  active: string | null;
-  item: string;
-  children?: React.ReactNode;
-}
-
-const MenuItem: React.FC<MenuItemProps> = ({
-  setActive,
-  active,
-  item,
-  children,
-}) => {
-  return (
-    <div onMouseEnter={() => setActive(item)} className="relative py-2">
-      <motion.p
-        transition={{ duration: 0.3 }}
-        className="cursor-pointer text-black hover:opacity-[0.9] dark:text-white"
-      >
-        {item}
-      </motion.p>
-      {active !== null && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={transition}
-        >
-          {active === item && (
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2">
-              {/* Invisible bridge to prevent gap */}
-              <div className="h-4 w-full" />
-              <motion.div
-                transition={transition}
-                layoutId="active"
-                className="bg-white dark:bg-black backdrop-blur-sm rounded-2xl overflow-hidden border border-black/[0.2] dark:border-white/[0.2] shadow-xl"
-              >
-                <motion.div layout className="w-max h-full p-4">
-                  {children}
-                </motion.div>
-              </motion.div>
-            </div>
-          )}
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
-interface MenuProps {
-  setActive: (item: string | null) => void;
-  children: React.ReactNode;
-}
-
-const Menu: React.FC<MenuProps> = ({ setActive, children }) => {
-  return (
-    <nav
-      onMouseLeave={() => setActive(null)}
-      className="relative rounded-full border border-transparent dark:bg-black dark:border-white/[0.2] bg-white shadow-input flex justify-center space-x-4 px-8 py-2"
-    >
-      {children}
-    </nav>
-  );
-};
-
-interface ProductItemProps {
+interface SubMenuItem {
   title: string;
   description: string;
   href: string;
-  icon: React.ElementType;
+  icon?: LucideIcon;
 }
 
-const ProductItem: React.FC<ProductItemProps> = ({
-  title,
-  description,
-  href,
-  icon: Icon,
-}) => {
-  return (
-    <Link
-      href={href}
-      className="flex items-center space-x-4 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-    >
-      <div className="flex-shrink-0 w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-        <Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-      </div>
-      <div>
-        <h4 className="text-sm font-bold mb-1 text-black dark:text-white">
-          {title}
-        </h4>
-        <p className="text-neutral-700 text-xs max-w-[10rem] dark:text-neutral-300">
-          {description}
-        </p>
-      </div>
-    </Link>
-  );
-};
-
-interface HoveredLinkProps
-  extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
-  children: React.ReactNode;
+interface NavMenuItem {
+  label: string;
+  icon: LucideIcon;
+  submenu?: SubMenuItem[];
 }
 
-const HoveredLink: React.FC<HoveredLinkProps> = ({
-  href,
-  children,
-  ...rest
-}) => {
+const NavbarDesktop = () => {
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const { connected } = useWallet();
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsVisible(window.scrollY === 0);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const menuItems: NavMenuItem[] = [
+    {
+      label: "Products",
+      icon: Zap,
+      submenu: [
+        {
+          title: "Dwalto Wallet",
+          description: "Non-custodial Solana wallet",
+          href: "/products/wallet",
+          icon: Wallet,
+        },
+        {
+          title: "Dwalto Wallet Adapter",
+          description: "Seamless blockchain integration",
+          href: "/products/dwalto-wallet-adapter",
+          icon: Globe,
+        },
+      ],
+    },
+    {
+      label: "Developers",
+      icon: Book,
+      submenu: [
+        {
+          title: "Documentation",
+          href: "/docs",
+          description: "Comprehensive guides",
+          icon: Book,
+        },
+        {
+          title: "API References",
+          href: "/api",
+          description: "Detailed technical specs",
+          icon: Code,
+        },
+      ],
+    },
+    {
+      label: "Resources",
+      icon: Settings,
+      submenu: [
+        {
+          title: "Blog",
+          href: "/blog",
+          description: "Latest insights",
+          icon: Newspaper,
+        },
+      ],
+    },
+    {
+      label: "FAQ",
+      icon: MessageCircle,
+    },
+  ];
+
   return (
-    <Link
-      href={href ?? ""}
-      {...rest}
-      className="text-neutral-700 dark:text-neutral-200 hover:text-black dark:hover:text-white p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors block"
-    >
-      {children}
-    </Link>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.header
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -100 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="fixed top-0 left-0 right-0 z-50 bg-black/80 text-white backdrop-blur-md"
+        >
+          <div className="container mx-auto px-4 py-3">
+            <nav className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Logo />
+              </div>
+
+              <div
+                className="flex items-center space-x-6"
+                onMouseLeave={() => setActiveMenu(null)}
+              >
+                {menuItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="relative"
+                    onMouseEnter={() => setActiveMenu(item.label)}
+                  >
+                    <button className="flex items-center text-sm font-medium hover:text-blue-600 transition-colors">
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                      {item.submenu && (
+                        <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
+                      )}
+                    </button>
+                    {item.submenu && (
+                      <AnimatePresence>
+                        {activeMenu === item.label && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 mt-4 w-64 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 p-4"
+                          >
+                            {item.submenu &&
+                              item.submenu.map((subitem) => (
+                                <Link
+                                  key={subitem.title}
+                                  href={subitem.href}
+                                  className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
+                                >
+                                  {subitem.icon ? (
+                                    <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md mr-3 flex items-center justify-center">
+                                      <subitem.icon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-10 mr-3" />
+                                  )}
+                                  <div className="flex flex-col justify-center">
+                                    <p className="font-semibold text-black text-sm group-hover:text-blue-600 leading-tight">
+                                      {subitem.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                      {subitem.description}
+                                    </p>
+                                  </div>
+                                </Link>
+                              ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-1 rounded-lg">
+                  <div>
+                    <WalletMultiButton
+                      style={{
+                        backgroundColor: "rgb(255 255 255 / 0.1)",
+                        height: "48px",
+                        borderRadius: "10px",
+                      }}
+                    >
+                      {!connected && <Wallet />}
+                    </WalletMultiButton>
+                  </div>
+                </div>
+                <SignIn />
+              </div>
+            </nav>
+          </div>
+        </motion.header>
+      )}
+    </AnimatePresence>
   );
 };
 
-const Appbar: React.FC = () => {
-  const [active, setActive] = useState<string | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleMouseEnter = (item: string) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setActive(item);
-  };
-
-  return (
-    <header className="w-full py-4 fixed top-0 left-0 right-0 dark:bg-black z-50">
-      <div className="container px-4 mx-auto">
-        <div className="flex items-center justify-between md:justify-start md:border md:p-2.5 rounded-xl max-w-2xl lg:max-w-4xl mx-auto md:bg-white/90 dark:md:bg-black/90 md:backdrop-blur-sm">
-          <div className="flex items-center">
-            <div className="border h-10 w-10 rounded-lg inline-flex items-center justify-center mr-4">
-              <Logo className="h-8 w-8" fill="currentColor" />
-            </div>
-          </div>
-          <nav className="hidden md:flex gap-4 lg:gap-8 text-sm flex-grow justify-center">
-            <Menu setActive={setActive}>
-              <MenuItem
-                setActive={handleMouseEnter}
-                active={active}
-                item="Products"
-              >
-                <div className="flex flex-col space-y-4 min-w-[350px]">
-                  <ProductItem
-                    title="HyperLink wallet"
-                    description="The world's simplest wallet"
-                    href="/products/hyperlink-wallet-adapter"
-                    icon={Wallet}
-                  />
-                  <ProductItem
-                    title="HyperLink Wallet Adapter"
-                    description="Make Solana apps consumer ready"
-                    href="#"
-                    icon={PlugZap}
-                  />
-                </div>
-              </MenuItem>
-              <MenuItem
-                setActive={handleMouseEnter}
-                active={active}
-                item="API & Docs"
-              >
-                <div className="flex flex-col space-y-1">
-                  <HoveredLink href="#">API Documentation</HoveredLink>
-                  <HoveredLink href="#">Integration Guide</HoveredLink>
-                  <HoveredLink href="#">SDK References</HoveredLink>
-                </div>
-              </MenuItem>
-              <MenuItem setActive={handleMouseEnter} active={active} item="FAQ">
-                <div className="flex flex-col space-y-1">
-                  <HoveredLink href="#">General Questions</HoveredLink>
-                  <HoveredLink href="#">Technical Support</HoveredLink>
-                </div>
-              </MenuItem>
-              <MenuItem
-                setActive={handleMouseEnter}
-                active={active}
-                item="Company"
-              >
-                <div className="flex flex-col space-y-1">
-                  <HoveredLink href="#">About Us</HoveredLink>
-                  <HoveredLink href="#">Careers</HoveredLink>
-                  <HoveredLink href="#">Contact</HoveredLink>
-                </div>
-              </MenuItem>
-              <MenuItem
-                setActive={handleMouseEnter}
-                active={active}
-                item="Blogs"
-              >
-                <div className="flex flex-col space-y-1">
-                  <HoveredLink href="#">Latest Posts</HoveredLink>
-                  <HoveredLink href="#">Categories</HoveredLink>
-                  <HoveredLink href="#">Archive</HoveredLink>
-                </div>
-              </MenuItem>
-            </Menu>
-          </nav>
-          <div className="flex items-center">
-            <SignIn />
-            <button className="md:hidden ml-4">
-              <MenuIcon className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};
-
-export default Appbar;
+export default NavbarDesktop;

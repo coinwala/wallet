@@ -120,7 +120,8 @@ const UserWalletDashboard: React.FC<UserWalletDashboardProps> = ({
             (token: TokenWithBalance) => parseFloat(token.balance) > 0
           );
           setTokenBalances(nonZeroBalances);
-          setTotalBalanceUSD(parseFloat(data.totalBalance));
+
+          setTotalBalanceUSD(parseFloat(data.totalUsdBalance));
         } catch (error) {
           console.error("Error fetching token balances:", error);
           setError("Failed to retrieve token balances.");

@@ -83,19 +83,19 @@ const AllTokensComponent = ({
     null
   );
 
-  useEffect(() => {
-    if (searchQuery === "") {
-      setSearchedTokens(tokens);
-    }
-    const handler = setTimeout(() => {
-      searchQuery && setDebouncedTokenInput(searchQuery);
-    }, 1000);
+  // useEffect(() => {
+  //   if (searchQuery === "") {
+  //     setSearchedTokens(tokens);
+  //   }
+  //   const handler = setTimeout(() => {
+  //     searchQuery && setDebouncedTokenInput(searchQuery);
+  //   }, 1000);
 
-    // Cleanup function to clear the timeout if inputValue changes before the timeout completes
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchQuery]);
+  //   // Cleanup function to clear the timeout if inputValue changes before the timeout completes
+  //   return () => {
+  //     clearTimeout(handler);
+  //   };
+  // }, [searchQuery]);
 
   useEffect(() => {
     if (debouncedTokenInput) {

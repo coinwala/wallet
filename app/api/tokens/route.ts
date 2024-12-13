@@ -1,117 +1,193 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TokenWithBalance, TokenDetails } from '@/lib/types';
-import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import axios from 'axios';
+import axios from "axios";
 
-// Static list of tokens for Solana devnet
-const STATIC_TOKENS: TokenDetails[] = [
-    {
-        name: "Solana",
-        mint: "So11111111111111111111111111111111111111112", // Native SOL mint address
-        symbol: "SOL",
-        decimals: 9,
-        logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
-        native: true
-    },
-    {
-        name: "USD Coin",
-        mint: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Devnet USDC mint
-        symbol: "USDC",
-        decimals: 6,
-        logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
-        native: false
-    },
-    {
-        name: "USDT",
-        mint: "DUSTawucrTsGU8hcqRdHDCbuYhCPADMLM2VcCb8VnFnQ", // Devnet USDT mint
-        symbol: "USDT",
-        decimals: 6,
-        logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg",
-        native: false
-    }
-];
-
-const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
-
-async function getSolanaPrice(): Promise<number> {
-    try {
-        const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-        return response.data.solana.usd;
-    } catch (error) {
-        console.error('Error fetching Solana price:', error);
-        // Return a default price if the API call fails
-        return 20; // You might want to adjust this default value
-    }
+interface TokenMetadata {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI: string;
+  tags: string[];
+  extensions?: {
+    coingeckoId?: string;
+  };
 }
 
-async function getAccountBalances(address: string): Promise<Map<string, number>> {
-    const pubkey = new PublicKey(address);
-    const balances = new Map<string, number>();
+interface TokenWithBalanceAndPrice {
+  name: string;
+  mint: string;
+  symbol: string;
+  decimals: number;
+  logoURI: string;
+  native: boolean;
+  balance: number;
+  usdBalance: number;
+  price: number;
+}
 
-    try {
-        // Fetch SOL balance
-        const solBalance = await connection.getBalance(pubkey);
-        balances.set("So11111111111111111111111111111111111111112", solBalance / 1e9); // Convert lamports to SOL
+const connection = new Connection(
+  "https://devnet.helius-rpc.com/?api-key=028f8594-c025-413e-9f99-9b32498a337d"
+);
 
-        // Fetch SPL token balances
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubkey, {
-            programId: TOKEN_PROGRAM_ID
-        });
+async function getTokenAccounts(address: string) {
+  const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+    new PublicKey(address),
+    { programId: TOKEN_PROGRAM_ID }
+  );
+  const solBalance = await connection.getBalance(new PublicKey(address));
 
-        tokenAccounts.value.forEach((accountInfo) => {
-            const parsedInfo = accountInfo.account.data.parsed.info;
-            const tokenMint = parsedInfo.mint;
-            const amount = parsedInfo.tokenAmount.uiAmount;
-            balances.set(tokenMint, amount);
-        });
+  const tokenBalances = tokenAccounts.value.map((account) => {
+    const mint = account.account.data.parsed.info.mint;
+    const processedMint =
+      mint === "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+        ? "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        : mint;
 
-        return balances;
-    } catch (error) {
-        console.error('Error fetching account balances:', error);
-        throw error;
+    return {
+      mint: processedMint,
+      balance:
+        account.account.data.parsed.info.tokenAmount.amount /
+        Math.pow(10, account.account.data.parsed.info.tokenAmount.decimals),
+    };
+  });
+
+  const solTokenBalance = {
+    mint: "So11111111111111111111111111111111111111112",
+    balance: solBalance / LAMPORTS_PER_SOL,
+  };
+
+  const allTokens = [solTokenBalance, ...tokenBalances];
+
+  return allTokens;
+}
+
+async function getTokenMetadata(mint: string): Promise<TokenMetadata | null> {
+  try {
+    const tokenMetadata = await axios.get<TokenMetadata>(
+      `https://tokens.jup.ag/token/${mint}`
+    );
+    return tokenMetadata.data;
+  } catch (error) {
+    console.error(`Failed to fetch metadata for mint ${mint}:`, error);
+    return null;
+  }
+}
+
+async function getTokenPrice(
+  coingeckoId?: string,
+  retries = 3
+): Promise<number> {
+  if (!coingeckoId) return 0;
+
+  try {
+    const response = await axios.get(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoId}&vs_currencies=usd`,
+      {
+        headers: {
+          "x-requested-with": "XMLHttpRequest",
+        },
+      }
+    );
+    return response.data[coingeckoId]?.usd || 0;
+  } catch (error) {
+    if (
+      retries > 0 &&
+      axios.isAxiosError(error) &&
+      error.response?.status === 429
+    ) {
+      const waitTime = Math.pow(2, 3 - retries) * 1000;
+      console.log(`Rate limited. Waiting ${waitTime}ms before retrying.`);
+
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+      return getTokenPrice(coingeckoId, retries - 1);
     }
+
+    console.error(`Error fetching price for ${coingeckoId}:`, error);
+    return 0;
+  }
 }
 
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const address = searchParams.get('address') as string;
+  const { searchParams } = new URL(req.url);
+  const address = searchParams.get("address") as string;
 
-    if (!address) {
-        return NextResponse.json({ error: 'Address parameter is required' }, { status: 400 });
-    }
+  if (!address) {
+    return NextResponse.json(
+      { error: "Address parameter is required" },
+      { status: 400 }
+    );
+  }
 
-    try {
-        const balances = await getAccountBalances(address);
-        const solPrice = await getSolanaPrice();
+  try {
+    // Get token accounts and balances
+    const accountTokens = await getTokenAccounts(address);
 
-        const tokensWithBalances: TokenWithBalance[] = await Promise.all(STATIC_TOKENS.map(async (token) => {
-            const balance = token.native
-                ? balances.get(token.mint) || 0
-                : balances.get(token.mint) || 0;
+    // Fetch metadata and prices for each token
+    const tokenDetailsPromises = accountTokens.map(async (token) => {
+      // Determine if the token is native (SOL)
+      const isNative =
+        token.mint === "So11111111111111111111111111111111111111112";
 
-            let price = 1; // Default price for stablecoins
-            if (token.symbol === 'SOL') {
-                price = solPrice;
-            }
+      // Get token metadata
+      const metadata = isNative
+        ? {
+            name: "Solana",
+            symbol: "SOL",
+            decimals: 9,
+            logoURI:
+              "https://assets.coingecko.com/coins/images/4128/standard/solana.png",
+            address: token.mint,
+            extensions: {
+              coingeckoId: "solana",
+            },
+          }
+        : await getTokenMetadata(token.mint);
 
-            const usdBalance = (balance * price).toFixed(2);
-            return {
-                ...token,
-                balance: balance.toFixed(token.decimals),
-                usdBalance,
-                price: price.toString()
-            };
-        }));
+      // If no metadata, return null
+      if (!metadata) return null;
 
-        const totalBalance = tokensWithBalances.reduce((acc, val) => acc + Number(val.usdBalance), 0).toFixed(2);
+      // Get token price
+      const price = isNative
+        ? await getTokenPrice("solana")
+        : await getTokenPrice(metadata.extensions?.coingeckoId);
 
-        return NextResponse.json({
-            tokens: tokensWithBalances,
-            totalBalance
-        });
-    } catch (error) {
-        console.error('Error in GET request:', error);
-        return NextResponse.json({ error: 'An error occurred while fetching token balances' }, { status: 500 });
-    }
+      // Calculate USD balance
+      const usdBalance = token.balance * price;
+
+      // Construct the token object
+      return {
+        name: metadata.name,
+        mint: token.mint,
+        symbol: metadata.symbol,
+        decimals: metadata.decimals,
+        logoURI: metadata.logoURI,
+        native: isNative,
+        balance: token.balance,
+        usdBalance: usdBalance,
+        price: price,
+      } as TokenWithBalanceAndPrice;
+    });
+
+    // Wait for all token details to be processed and filter out null results
+    const tokenDetails = (await Promise.all(tokenDetailsPromises)).filter(
+      (token): token is TokenWithBalanceAndPrice => token !== null
+    );
+
+    return NextResponse.json({
+      tokens: tokenDetails,
+      totalUsdBalance: tokenDetails.reduce(
+        (sum, token) => sum + token.usdBalance,
+        0
+      ),
+    });
+  } catch (error) {
+    console.error("Error fetching token details:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch token details" },
+      { status: 500 }
+    );
+  }
 }

@@ -25,6 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  trustHost: true,
   callbacks: {
     // get the idToken
     async jwt({ token, account }) {

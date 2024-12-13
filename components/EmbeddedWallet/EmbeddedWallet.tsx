@@ -1,26 +1,35 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import Image from "next/image";
-import { FaGoogle } from "react-icons/fa6";
 import WalletOverview from "./WalletOverview";
 import { createMessageId, isAllowedOrigin } from "@/lib/messageUtils";
-import { MessageData } from "@/lib/types";
+import { ExtendedTransactionDetails, MessageData } from "@/lib/types";
+import nacl from "tweetnacl";
 import { ALLOWED_ORIGINS } from "@/lib/constants";
 import { Session } from "next-auth";
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+
+import { LoginDialog } from "./LoginDialog";
+import TransactionDialog from "./TransactionDialog";
+import { getPrivateKey } from "@/lib/client";
+
+// View types enum
+enum ViewType {
+  WALLET = "WALLET",
+  LOGIN = "LOGIN",
+  TRANSACTION = "TRANSACTION",
+}
 
 const useMessageHandler = () => {
   const parentOriginRef = useRef<string | null>(null);
   const processedMessages = useRef<Set<string>>(new Set());
   const publicKeyRef = useRef<string | null>(null);
 
-  // Modified sendMessageToParent to handle development environment
   const sendMessageToParent = useCallback((message: MessageData) => {
     if (typeof window === "undefined" || !window.parent) {
       console.error("No parent window found");
@@ -29,79 +38,59 @@ const useMessageHandler = () => {
 
     const enrichedMessage = {
       ...message,
-      windowName: "default-window",
+      windowName: "",
       timestamp: Date.now(),
     };
 
     const isDevelopment = process.env.NODE_ENV === "development";
-    const developmentOrigins = ["http://localhost:3001"];
-    const originsToTry = isDevelopment ? developmentOrigins : ALLOWED_ORIGINS;
 
-    const sendToOrigin = (origin: string): boolean => {
+    if (isDevelopment) {
       try {
-        window.parent.postMessage(enrichedMessage, origin);
-        console.log(`Successfully sent message to ${origin}:`, enrichedMessage);
-        return true;
+        window.parent.postMessage(enrichedMessage, "*");
       } catch (err) {
-        console.warn(`Failed to send to ${origin}:`, err);
-        return false;
+        console.error("Failed to send message:", err);
       }
-    };
+      return;
+    }
 
-    // If we have a stored parent origin and it's valid, try it first
     if (parentOriginRef.current) {
-      const isAllowed = isDevelopment
-        ? developmentOrigins.includes(parentOriginRef.current)
-        : isAllowedOrigin(parentOriginRef.current);
-
-      if (isAllowed && sendToOrigin(parentOriginRef.current)) {
-        return;
+      try {
+        window.parent.postMessage(enrichedMessage, parentOriginRef.current);
+      } catch (err) {
+        console.warn(`Failed to send to ${parentOriginRef.current}:`, err);
       }
-    }
-
-    // Try all allowed origins
-    let messageSent = false;
-    for (const origin of originsToTry) {
-      if (sendToOrigin(origin)) {
-        parentOriginRef.current = origin;
-        messageSent = true;
-        break;
+    } else {
+      let messageSent = false;
+      for (const origin of ALLOWED_ORIGINS) {
+        try {
+          window.parent.postMessage(enrichedMessage, origin);
+          parentOriginRef.current = origin;
+          messageSent = true;
+          break;
+        } catch (err) {
+          console.warn(`Failed to send to ${origin}:`, err);
+        }
       }
-    }
 
-    if (!messageSent) {
-      console.error("Failed to send message to any allowed origin");
+      if (!messageSent) {
+        console.error("Failed to send message to any allowed origin");
+      }
     }
   }, []);
 
-  // Modified to handle development environment
   const sendPublicKey = useCallback(
     (publicKey: string, dAppSessionId?: string, tipLinkSessionId?: string) => {
       publicKeyRef.current = publicKey;
-      const isDevelopment = process.env.NODE_ENV === "development";
-      const originsToTry = isDevelopment
-        ? ["http://localhost:3000", "http://localhost:3001"]
-        : ALLOWED_ORIGINS;
-
-      originsToTry.forEach((origin) => {
-        try {
-          window.parent.postMessage(
-            {
-              type: "public_key",
-              publicKey,
-              windowName: "default-window",
-              timestamp: Date.now(),
-              dAppSessionId,
-              tipLinkSessionId,
-            },
-            origin
-          );
-        } catch (err) {
-          console.warn(`Failed to send public key to ${origin}:`, err);
-        }
+      sendMessageToParent({
+        type: "public_key",
+        publicKey,
+        windowName: "",
+        timestamp: Date.now(),
+        dAppSessionId,
+        tipLinkSessionId,
       });
     },
-    []
+    [sendMessageToParent]
   );
 
   return {
@@ -112,59 +101,18 @@ const useMessageHandler = () => {
     publicKeyRef,
   };
 };
-const LoginDialog = ({
-  onGoogleLogin,
-  handleLoginClose,
-  showLoginView,
-}: {
-  onGoogleLogin: () => void;
-  handleLoginClose: () => void;
-  showLoginView: boolean;
-}) => (
-  <Dialog onOpenChange={handleLoginClose} defaultOpen={showLoginView}>
-    <DialogContent className="relative w-full bg-white px-8 pb-8 pt-10 dark:bg-gray-950 mobile:min-w-[390px] mobile:px-10 sm:max-w-[430px] rounded-xl shadow-lg">
-      <div className="mx-auto flex flex-shrink-0 items-center justify-center">
-        <Image
-          src="/icons/logo.png"
-          alt="logo"
-          width={90}
-          height={90}
-          priority
-        />
-      </div>
 
-      <DialogHeader>
-        <DialogTitle className="flex justify-center text-center my-3 text-[20px] font-bold leading-none text-gray-800 dark:text-gray-50 mobile:text-[24px]">
-          Login to HyperLink
-        </DialogTitle>
-        <p className="mb-3 text-center text-xs text-gray-600 dark:text-gray-200 mobile:text-base">
-          Click below to continue with your Google account.
-        </p>
-      </DialogHeader>
-
-      <DialogFooter>
-        <button
-          onClick={onGoogleLogin}
-          className="w-full relative h-11 rounded-lg bg-black transition-colors duration-150 ease-linear hover:bg-gray-800"
-        >
-          <div className="absolute left-[3px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md bg-white">
-            <FaGoogle className="h-5 w-5" />
-          </div>
-          <h3 className="font-bold text-white pl-7">Login with Google</h3>
-        </button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
 type UserInfoProps = {
   session: Session | null;
 };
 
 export default function EmbeddedWallet({ session }: UserInfoProps) {
-  const [showWalletView, setShowWalletView] = useState(false);
-  const [tokenBalances, setTokenBalances] = useState<any[]>([]);
-  const [totalBalanceUSD, setTotalBalanceUSD] = useState(0);
-  const [showLoginView, setShowLoginView] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.LOGIN);
+  const [transactionDetails, setTransactionDetails] =
+    useState<ExtendedTransactionDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentRequestId, setCurrentRequestId] = useState<string>("");
+
   const {
     sendMessageToParent,
     sendPublicKey,
@@ -172,21 +120,225 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     processedMessages,
     publicKeyRef,
   } = useMessageHandler();
-  console.log("session", session);
+
+  const handleTransactionConfirm = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (!transactionDetails) {
+        throw new Error("No transaction details available");
+      }
+
+      console.log("Starting transaction signing process");
+
+      const keypair = await getKeypair();
+      if (!keypair) {
+        throw new Error("Failed to generate keypair");
+      }
+
+      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+      const { blockhash } = await connection.getLatestBlockhash();
+
+      let signedTransaction: Transaction;
+
+      try {
+        const transaction = Transaction.from(
+          Buffer.from(transactionDetails.originalMessage, "base64")
+        );
+
+        if (!transaction.feePayer) {
+          transaction.feePayer = keypair.publicKey;
+        }
+
+        transaction.recentBlockhash = blockhash;
+
+        // Sign the transaction
+        transaction.sign(keypair);
+
+        const isVerified = transaction.verifySignatures();
+        if (!isVerified) {
+          throw new Error("Transaction signature verification failed");
+        }
+
+        signedTransaction = transaction;
+      } catch (error) {
+        console.error("Legacy transaction handling failed:", error);
+        throw error;
+      }
+      const signedMessage = signedTransaction.serialize({
+        requireAllSignatures: true,
+        verifySignatures: true,
+      });
+
+      sendMessageToParent({
+        type: "signed_transaction",
+        status: "success",
+        requestId: currentRequestId,
+        signed_transaction: signedMessage.toString("base64"),
+        windowName: "",
+        publicKey: keypair.publicKey.toBase58(),
+      });
+      try {
+        const signature = await connection.sendRawTransaction(signedMessage, {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+        const confirmation = await connection.confirmTransaction(
+          signature,
+          "confirmed"
+        );
+
+        if (confirmation.value.err) {
+          throw new Error(`Transaction failed: ${confirmation.value.err}`);
+        }
+
+        console.log("Transaction sent successfully! Signature:", signature);
+      } catch (sendError) {
+        console.error("Error sending transaction:", sendError);
+        throw new Error(`Failed to send transaction: ${sendError}`);
+      }
+
+      console.log("Transaction signed and sent successfully");
+      setCurrentView(ViewType.WALLET);
+    } catch (error) {
+      console.error("Transaction signing error:", error);
+      console.error(
+        "Error stack:",
+        error instanceof Error ? error.stack : "No stack trace"
+      );
+
+      sendMessageToParent({
+        type: "sign_error",
+        status: "error",
+        requestId: currentRequestId,
+        message:
+          error instanceof Error ? error.message : "Failed to sign transaction",
+        windowName: "",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentRequestId, sendMessageToParent, transactionDetails]);
+
+  function deserializeTransaction(
+    base64Message: string | undefined
+  ): Transaction {
+    try {
+      if (!base64Message) {
+        throw new Error("No transaction message provided");
+      }
+
+      const buffer = Buffer.from(base64Message, "base64");
+
+      const transaction = Transaction.from(buffer);
+
+      if (!transaction) {
+        throw new Error("Failed to create transaction from buffer");
+      }
+
+      return transaction;
+    } catch (error) {
+      console.error("Transaction deserialization error:", error);
+      throw new Error(
+        `Failed to deserialize transaction: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+
+  const hexToUint8Array = (hexString: string): Uint8Array => {
+    if (hexString.length % 2 !== 0) {
+      throw new Error("Invalid hex string length");
+    }
+
+    const bytes = new Uint8Array(hexString.length / 2);
+    for (let i = 0; i < hexString.length; i += 2) {
+      bytes[i / 2] = parseInt(hexString.slice(i, i + 2), 16);
+    }
+    return bytes;
+  };
+
+  async function getKeypair(): Promise<Keypair | null> {
+    try {
+      const privateKeyString = await getPrivateKey();
+
+      if (!privateKeyString) {
+        console.error("No private key found");
+        return null;
+      }
+      console.log("transaction", transactionDetails);
+      const secretKey = hexToUint8Array(privateKeyString.toString());
+      console.log("secretKey", Keypair.fromSecretKey(secretKey));
+      return Keypair.fromSecretKey(secretKey);
+    } catch (error) {
+      console.error("Error creating keypair:", error);
+      throw new Error("Invalid private key format");
+    }
+  }
+
+  const handleTransactionCancel = useCallback(() => {
+    sendMessageToParent({
+      type: "transaction_closed",
+      status: "cancelled",
+    });
+  }, [sendMessageToParent]);
+  function processTransaction(
+    base64Message: string
+  ): ExtendedTransactionDetails {
+    try {
+      const reconstructedTransaction = deserializeTransaction(base64Message);
+      const transactionInstructions = reconstructedTransaction.instructions;
+      let estimatedSolAmount = 0;
+      try {
+        if (transactionInstructions.length > 0) {
+          const instruction = transactionInstructions[0];
+          if (instruction.programId.equals(SystemProgram.programId)) {
+            const dataView = new DataView(instruction.data.buffer);
+            estimatedSolAmount = Number(dataView.getBigUint64(4, true)) / 1e9;
+          }
+        }
+      } catch (err) {
+        console.warn("Error extracting SOL amount:", err);
+        estimatedSolAmount = 0;
+      }
+
+      const mockSolPrice = 100;
+      const estimatedUsdAmount = estimatedSolAmount * mockSolPrice;
+
+      return {
+        feePayer: reconstructedTransaction.feePayer?.toBase58(),
+        recentBlockhash: reconstructedTransaction.recentBlockhash,
+        instructionsCount: reconstructedTransaction.instructions?.length ?? 0,
+        solAmount: estimatedSolAmount,
+        usdAmount: estimatedUsdAmount,
+        receivingAsset: {
+          name: "SOL",
+          amount: estimatedSolAmount,
+        },
+        hyperLinkHandle: publicKeyRef.current
+          ? `@${publicKeyRef.current.slice(
+              0,
+              4
+            )}...${publicKeyRef.current.slice(-4)}`
+          : "@unknown",
+        originalMessage: base64Message,
+      };
+    } catch (error) {
+      console.error("Transaction processing error:", error);
+      throw error;
+    }
+  }
+
   const handleMessage = useCallback(
     (event: MessageEvent<MessageData>) => {
-      const origin = event.origin;
-
-      // Allow messages from both ports during development
       const isDevelopment = process.env.NODE_ENV === "development";
-      const isValidOrigin = isDevelopment
-        ? origin.startsWith("http://localhost")
-        : isAllowedOrigin(origin);
-
-      if (!isValidOrigin) {
-        console.warn("Unauthorized origin:", origin);
+      if (!isDevelopment && !isAllowedOrigin(event.origin)) {
+        console.warn("Unauthorized origin:", event.origin);
         return;
       }
+
+      parentOriginRef.current = event.origin;
 
       const messageId = createMessageId(
         event.data?.type,
@@ -199,14 +351,10 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         processedMessages.current.clear();
       }
 
-      parentOriginRef.current = origin;
-
       if (!event.data || typeof event.data !== "object") {
         console.warn("Invalid message format");
         return;
       }
-
-      console.log("Processing message:", event.data);
 
       switch (event.data.type) {
         case "ack":
@@ -215,7 +363,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
             dAppSessionId: event.data.dAppSessionId,
             tipLinkSessionId: event.data.tipLinkSessionId,
           });
-
           break;
 
         case "public_key":
@@ -241,7 +388,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
         case "click_to_continue":
         case "embedded_login":
-        case "tiplink_autoconnect_from_redirect":
           sendMessageToParent({
             type: `${event.data.type}_received`,
           });
@@ -249,20 +395,45 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
         case "show_wallet":
           console.log("show_wallet");
-          setShowWalletView(true);
+          setCurrentView(ViewType.WALLET);
           sendMessageToParent({
             type: "show_wallet",
-            windowName: "default-window",
+            windowName: "",
           });
           break;
+
         case "login_success":
-          setShowLoginView(false);
+          console.log("login_success");
+          setCurrentView(ViewType.WALLET);
           break;
-        case "disconnect":
-          // Clear all references and state
-          publicKeyRef.current = null;
-          parentOriginRef.current = null;
-          setShowLoginView(true); // Reset to initial state
+
+        case "sign_transaction":
+          try {
+            const messageData: MessageData = event.data;
+            if (messageData.message && messageData.requestId) {
+              const processedTx = processTransaction(messageData.message);
+
+              setTransactionDetails({
+                ...processedTx,
+                originalMessage: messageData.message,
+              });
+
+              setCurrentRequestId(messageData.requestId);
+              setCurrentView(ViewType.TRANSACTION);
+            } else {
+              throw new Error("Missing transaction message or requestId");
+            }
+          } catch (error) {
+            console.error("Sign transaction error:", error);
+            if (event.data.requestId) {
+              sendMessageToParent({
+                type: "sign_transaction_response",
+                requestId: event.data.requestId,
+                status: "error",
+                windowName: "",
+              });
+            }
+          }
           break;
         default:
           console.log("Unhandled message type:", event.data.type);
@@ -271,22 +442,11 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     [sendMessageToParent]
   );
 
-  const fetchTokenBalances = async (publicKey: string) => {
-    try {
-      const response = await fetch(`/api/tokens?address=${publicKey}`);
-      if (!response.ok) throw new Error("Failed to fetch token balances");
-      const data = await response.json();
-      setTokenBalances(data.tokens || []);
-      setTotalBalanceUSD(data.totalBalance || 0);
-    } catch (error) {
-      console.error("Error fetching token balances:", error);
-    }
-  };
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     window.addEventListener("message", handleMessage);
+    console.log("121");
     sendMessageToParent({ type: "ready" });
 
     return () => window.removeEventListener("message", handleMessage);
@@ -298,27 +458,17 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
         console.error("No public key received from login");
         return;
       }
-
-      // Store and send the public key
       sendPublicKey(publicKey);
-
-      // Fetch token balances with the new public key
-      fetchTokenBalances(publicKey);
-
-      // Update wallet view
-      setShowWalletView(true);
+      setCurrentView(ViewType.WALLET);
     },
     [sendPublicKey]
   );
-  console.log(
-    "provider",
-    localStorage.getItem("7z2fo3j1mljjfcmdrk5r32xaufzct6git2bjc17wdnoy_SFA")
-  );
+
   const handleGoogleLogin = useCallback(() => {
     console.log("Initiating Google login");
     sendMessageToParent({
       type: "login_initiated",
-      windowName: "default-window",
+      windowName: "",
     });
 
     const width = 500;
@@ -326,16 +476,25 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
-    // Create popup and add message listener for login response
+    const loginUrl = new URL("/embedded_adapter_login", window.location.origin);
+    if (parentOriginRef.current) {
+      loginUrl.searchParams.set("parentOrigin", parentOriginRef.current);
+    }
+
     const loginWindow = window.open(
-      "/embedded_adapter_login",
+      loginUrl.toString(),
       "Login",
       `width=${width},height=${height},left=${left},top=${top}`
     );
 
-    // Handle login response message
     const handleLoginResponse = (event: MessageEvent) => {
-      if (!isAllowedOrigin(event.origin)) return;
+      const isDevelopment = process.env.NODE_ENV === "development";
+      const isValidOrigin = isDevelopment
+        ? event.origin.startsWith("http://localhost:3000") ||
+          event.origin.startsWith("http://localhost:3001")
+        : isAllowedOrigin(event.origin);
+
+      if (!isValidOrigin) return;
 
       if (event.data?.type === "login_success" && event.data?.publicKey) {
         handleLoginSuccess(event.data.publicKey);
@@ -347,27 +506,10 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
   }, [sendMessageToParent, handleLoginSuccess]);
 
   const handleOverviewClose = useCallback(() => {
-    setShowWalletView(false);
+    setCurrentView(ViewType.LOGIN);
     sendMessageToParent({
       type: "hide_wallet",
-      windowName: "default-window",
-    });
-  }, [sendMessageToParent]);
-  const handleLoginClose = useCallback(() => {
-    // Reset all state
-    setShowLoginView(false);
-    setShowWalletView(false);
-    setTokenBalances([]);
-    setTotalBalanceUSD(0);
-    publicKeyRef.current = null;
-
-    // Clear any stored session data
-    localStorage.clear(); // Or specifically clear wallet-related items
-
-    // Notify parent
-    sendMessageToParent({
-      type: "disconnect",
-      windowName: "default-window",
+      windowName: "",
     });
 
     // Wait for disconnect acknowledgment before final cleanup
@@ -378,17 +520,37 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
     cleanup();
   }, [sendMessageToParent]);
 
-  return showWalletView ? (
-    <WalletOverview
-      showWalletView={showWalletView}
-      onClose={handleOverviewClose}
-      session={session}
-    />
-  ) : (
-    <LoginDialog
-      showLoginView={showLoginView}
-      handleLoginClose={handleLoginClose}
-      onGoogleLogin={handleGoogleLogin}
-    />
-  );
+  const handleLoginClose = useCallback(() => {
+    sendMessageToParent({
+      type: "cancel_connect",
+      windowName: "",
+    });
+  }, [sendMessageToParent]);
+
+  const viewComponents: Record<ViewType, () => JSX.Element> = {
+    [ViewType.WALLET]: () => (
+      <WalletOverview
+        showWalletView={currentView === ViewType.WALLET}
+        onClose={handleOverviewClose}
+        session={session}
+      />
+    ),
+    [ViewType.LOGIN]: () => (
+      <LoginDialog
+        showLoginView={currentView === ViewType.LOGIN}
+        handleLoginClose={handleLoginClose}
+        onGoogleLogin={handleGoogleLogin}
+      />
+    ),
+    [ViewType.TRANSACTION]: () => (
+      <TransactionDialog
+        onConfirm={handleTransactionConfirm}
+        onCancel={handleTransactionCancel}
+        transactionDetails={transactionDetails || {}}
+        isLoading={isLoading}
+      />
+    ),
+  };
+
+  return viewComponents[currentView]();
 }

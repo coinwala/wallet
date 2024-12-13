@@ -1,4 +1,4 @@
-# My Project
+# The Project
 
 ## Overview
 
