@@ -5,7 +5,6 @@ import {
   FaGithub,
   FaXTwitter,
 } from "react-icons/fa6";
-import Logo from "../icons/Logo";
 import Link from "next/link";
 import CoinwalaLogo from "../CoinWala";
 

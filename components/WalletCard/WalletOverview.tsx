@@ -17,8 +17,7 @@ import { Card, CardContent } from "../ui/card";
 import Image from "next/image";
 import FundingOptions from "../AddFunds/FundingOptions";
 import WithdrawOptions from "../WithdrawOptions/WithdrawOptions";
-import { Swap } from "../Swap/swap";
-import io from "socket.io-client";
+import TokenSwap from "../Swap/swap";
 
 interface WalletOverviewProps {
   totalBalanceUSD: number;
@@ -34,7 +33,6 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
   session,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("assets");
-  console.log("tokenBalances", tokenBalances);
   const renderTabContent = () => {
     switch (activeTab) {
       case "assets":
@@ -57,7 +55,7 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
         return (
           <div>
             {" "}
-            <Swap tokenBalances={tokenBalances} />
+            <TokenSwap tokenBalances={tokenBalances} />
           </div>
         );
       default:
