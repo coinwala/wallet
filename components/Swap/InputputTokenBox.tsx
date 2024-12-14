@@ -26,46 +26,34 @@ import {
 } from "@/components/ui/popover";
 import { Token, TokenWithBalance } from "@/lib/types";
 
-interface ComboboxProps {
-  tokens: Token[] | null | undefined;
-  defaultToken?: string; // Optional prop to set default token
-  onTokenSelect?: (token: TokenWithBalance | undefined) => void; // Optional callback for token selection
+interface InputputTokenBoxProps {
+  tokens: TokenWithBalance[] | null;
+  defaultToken?: string;
+  setInputSelectedToken?: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export function ComboboxOutput({
+export function InputputTokenBox({
   tokens,
-  defaultToken = "USDC",
-  onTokenSelect,
-}: ComboboxProps) {
+  defaultToken = "SOL",
+  setInputSelectedToken,
+}: InputputTokenBoxProps) {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState(defaultToken);
 
-  React.useEffect(() => {
-    if (tokens) {
-      const defaultTokenExists = tokens.some(
-        (token) => token.symbol === defaultToken
-      );
-      if (!defaultTokenExists) {
-        setValue(tokens[0].symbol);
-      }
-    }
-  }, [tokens, defaultToken]);
-
   const handleSelect = (currentValue: string) => {
-    const newValue = currentValue === value ? "" : currentValue;
-    console.log(newValue);
-    setValue(newValue);
+    setValue(currentValue);
     setOpen(false);
-    // if (onTokenSelect && newValue) {
-    //   onTokenSelect(tokens?.find((token) => token.symbol === newValue));
-    // }
+    if (setInputSelectedToken) {
+      setInputSelectedToken(currentValue);
+    }
   };
+
   function truncateAddress(
     address: string,
     startChars: number = 4,
     endChars: number = 4
   ): string {
-    if (address.length <= startChars + endChars) {
+    if (!address || address.length <= startChars + endChars) {
       return address;
     }
     return `${address.slice(0, startChars)}...${address.slice(-endChars)}`;
@@ -84,14 +72,15 @@ export function ComboboxOutput({
         >
           {selectedToken ? (
             <div className="flex gap-1 items-center">
-              <img
-                loading="lazy"
-                height={20}
-                width={20}
-                src={selectedToken.logoURI}
-                alt={`${selectedToken.name} logo`}
-                className="rounded-full"
-              />
+              {selectedToken.logoURI && (
+                <img
+                  height={20}
+                  width={20}
+                  src={selectedToken.logoURI}
+                  alt={`${selectedToken.name} logo`}
+                  className="rounded-full"
+                />
+              )}
               {selectedToken.symbol}
             </div>
           ) : (
@@ -112,63 +101,64 @@ export function ComboboxOutput({
             {selectedToken && (
               <CommandItem>
                 <div className="flex gap-2 items-center w-full">
-                  <img
-                    height={20}
-                    width={20}
-                    src={selectedToken?.logoURI}
-                    alt={`${selectedToken?.name} logo`}
-                    className="rounded-full"
-                  />
+                  {selectedToken.logoURI && (
+                    <img
+                      height={20}
+                      width={20}
+                      src={selectedToken.logoURI}
+                      alt={`${selectedToken.name} logo`}
+                      className="rounded-full"
+                    />
+                  )}
                   <div className="flex flex-col">
-                    <span className="font-medium">{selectedToken?.name}</span>
+                    <span className="font-medium">{selectedToken.name}</span>
                     <span className="text-muted-foreground text-xs flex items-center ">
-                      <p>{selectedToken?.symbol}</p>
+                      <p>{selectedToken.symbol}</p>
 
-                      <p className=" flex gap-1 !ml-2 !min-h-fit !p-1 !text-[10px] !leading-none bg-gray-300  !text-grey-700 rounded-lg">
-                        {" "}
-                        {truncateAddress(
-                          selectedToken?.address?.toString() || ""
-                        )}
-                        <ArrowUpRight className="h-[10px] w-[15px] " />
-                      </p>
+                      {selectedToken.mint && (
+                        <p className="flex gap-1 !ml-2 !min-h-fit !p-1 !text-[10px] !leading-none bg-gray-300 !text-grey-700 rounded-lg">
+                          {truncateAddress(selectedToken.mint.toString())}
+                          <ArrowUpRight className="h-[10px] w-[15px] " />
+                        </p>
+                      )}
                     </span>
                   </div>
                 </div>
               </CommandItem>
             )}
-            <CommandItem>
-              <p className="text-gray-700 sticky top-9 z-[100001] border-b border-t border-grey-100 bg-white px-4 pb-2 pt-2 text-xs font-bold text-grey-700">
-                VERIFIED TOKENS
-              </p>
-            </CommandItem>
+
+            <p className="text-gray-700 sticky top-9 z-[100001] border-b border-t border-grey-100 bg-white px-4 pb-2 pt-2 text-xs font-bold text-grey-700">
+              VERIFIED TOKENS
+            </p>
             <CommandGroup>
               {tokens?.map((token) => (
                 <CommandItem
-                  key={token.address}
+                  key={token.symbol}
                   value={token.symbol}
                   onSelect={handleSelect}
                   className={cn("flex gap-2 items-center")}
                 >
                   <div className="flex gap-2 items-center w-full">
-                    <img
-                      height={20}
-                      width={20}
-                      src={token.logoURI}
-                      alt={`${token.name} logo`}
-                      className="rounded-full"
-                    />
+                    {token.logoURI && (
+                      <img
+                        height={20}
+                        width={20}
+                        src={token.logoURI}
+                        alt={`${token.name} logo`}
+                        className="rounded-full"
+                      />
+                    )}
                     <div className="flex flex-col">
                       <span className="font-medium">{token.name}</span>
                       <span className="text-muted-foreground text-xs flex items-center ">
-                        <p>{token?.symbol}</p>
+                        <p>{token.symbol}</p>
 
-                        <p className=" flex gap-1 !ml-2 !min-h-fit !p-1 !text-[10px] !leading-none bg-gray-300  !text-grey-700 rounded-lg">
-                          {" "}
-                          {truncateAddress(
-                            selectedToken?.address?.toString() || ""
-                          )}
-                          <ArrowUpRight className="h-[10px] w-[15px] " />
-                        </p>
+                        {token.mint && (
+                          <p className="flex gap-1 !ml-2 !min-h-fit !p-1 !text-[10px] !leading-none bg-gray-300 !text-grey-700 rounded-lg">
+                            {truncateAddress(token.mint.toString())}
+                            <ArrowUpRight className="h-[10px] w-[15px] " />
+                          </p>
+                        )}
                       </span>
                     </div>
                     {value === token.symbol && (

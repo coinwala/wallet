@@ -2,28 +2,33 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "./tokenSelectInput";
+import { InputputTokenBox } from "./InputputTokenBox";
 import { Token, TokenWithBalance } from "@/lib/types";
-import { ComboboxOutput } from "./ComboboxOutput";
+import { OutputTokenBox } from "./OutputTokenBox";
 
 interface TokenInputProps {
   label: string;
-  tokens: TokenWithBalance[] | null;
+  tokens?: TokenWithBalance[] | null;
   readOnly?: boolean;
   selectedToken?: TokenWithBalance | undefined;
-  onTokenSelect?: (token: TokenWithBalance | undefined) => void;
   tokenList?: Token[] | null;
+  setInputSelectedToken?: React.Dispatch<React.SetStateAction<string>>;
+  setOutputSelectedToken?: React.Dispatch<React.SetStateAction<string>>;
+  setAmount?: React.Dispatch<React.SetStateAction<string>>;
+  amount?: string;
 }
 
 export default function TokenInput({
   label,
   tokens,
   selectedToken,
-  onTokenSelect,
   tokenList,
+  setInputSelectedToken,
+  setOutputSelectedToken,
   readOnly = false,
+  setAmount,
+  amount,
 }: TokenInputProps) {
-  const [amount, setAmount] = useState<string | undefined>("");
   return (
     <div
       className={`w-full flex bg-white pt-4 px-5 border border-grey-100 pb-5 ${
@@ -38,14 +43,17 @@ export default function TokenInput({
           {!readOnly ? (
             <div className="relative">
               {tokens && (
-                <Combobox onTokenSelect={onTokenSelect} tokens={tokens} />
+                <InputputTokenBox
+                  tokens={tokens}
+                  setInputSelectedToken={setInputSelectedToken}
+                />
               )}
             </div>
           ) : (
             <div className="relative">
               {readOnly && (
-                <ComboboxOutput
-                  onTokenSelect={onTokenSelect}
+                <OutputTokenBox
+                  setOutputSelectedToken={setOutputSelectedToken}
                   tokens={tokenList}
                 />
               )}
@@ -70,7 +78,7 @@ export default function TokenInput({
               className="w-full border-none bg-white text-end font-light outline-none text-5xl"
               placeholder="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount && setAmount(e.target.value)}
               readOnly={readOnly}
             />
             {!readOnly && (
@@ -79,7 +87,9 @@ export default function TokenInput({
                   variant="secondary"
                   size="sm"
                   className="h-5 max-h-5 min-h-5 w-10 min-w-10 max-w-10 rounded-xl text-[11px]"
-                  onClick={() => setAmount(selectedToken?.balance)}
+                  onClick={() =>
+                    setAmount && setAmount(selectedToken?.balance || "")
+                  }
                 >
                   Max
                 </Button>
