@@ -7,12 +7,23 @@ import { SwapRouteResponse, Token, TokenWithBalance } from "@/lib/types";
 import { useEffect, useState } from "react";
 import fetch from "cross-fetch";
 import SwapSetting from "./SwapDetails";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  VersionedTransaction,
+} from "@solana/web3.js";
+import { getPrivateKey } from "@/lib/client";
 
 interface TokenSwapProps {
   tokenBalances: TokenWithBalance[];
+  publicKey: string | null;
 }
 
-export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
+export default function TokenSwap({
+  tokenBalances,
+  publicKey,
+}: TokenSwapProps) {
   const [selectedToken, setSelectedToken] = useState<
     TokenWithBalance | undefined
   >(undefined);
@@ -85,7 +96,6 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
           `https://quote-api.jup.ag/v6/quote?inputMint=${inputToken?.mint}&outputMint=${outputToken?.address}&amount=${lamports}&slippageBps=${slippageBps}`
         )
       ).json();
-      console.log(quoteResponse);
       if (inputAmt > 0) {
         setQuote(quoteResponse);
       } else {
@@ -95,6 +105,82 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
       console.log("err", err);
     }
   };
+  const SwapConfirm = async () => {
+    const privateKeyString = await getPrivateKey();
+
+    // Add type and existence check
+    if (!privateKeyString || typeof privateKeyString !== "string") {
+      throw new Error("Invalid private key: must be a non-empty string");
+    }
+
+    try {
+      // Decode base64 string to Uint8Array
+      const privateKey = Uint8Array.from(
+        Buffer.from(privateKeyString, "base64")
+      );
+
+      // Create connection and continue with existing code
+      const connection = new Connection(
+        "https://api.mainnet-beta.solana.com",
+        "confirmed"
+      );
+      console.log("Request payload:", {
+        quote,
+        userPublicKey: publicKey,
+        wrapAndUnwrapSol: true,
+        feeAccount: process.env.NEXT_PUBLIC_PUBLIC_KEY,
+      });
+
+      // Fetch swap transaction from Jupiter API
+      const response = await fetch("https://quote-api.jup.ag/v6/swap", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quote,
+          userPublicKey: publicKey,
+          wrapAndUnwrapSol: true,
+          feeAccount: process.env.NEXT_PUBLIC_PUBLIC_KEY,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Jupiter API Error: ${errorText}`);
+      }
+
+      // Parse swap transaction
+      const { swapTransaction } = await response.json();
+      const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
+      // Create keypair from converted private key
+      const wallet = Keypair.fromSecretKey(privateKey);
+
+      // Sign the transaction
+      transaction.sign([wallet]);
+
+      // Send the transaction
+      const signature = await connection.sendRawTransaction(
+        transaction.serialize()
+      );
+
+      // Confirm transaction
+      const confirmation = await connection.confirmTransaction(signature);
+
+      if (confirmation.value.err) {
+        throw new Error("Transaction failed");
+      }
+
+      console.log("Swap successful", signature);
+      return signature;
+    } catch (error) {
+      console.error("Swap Error:", error);
+      throw error;
+    }
+  };
+
   return (
     <Card className="mx-auto mt-4 flex-col items-center space-y-2 rounded-xl border border-white bg-white/50 p-[20px] text-center shadow-[0px_4px_40px_rgba(0,_0,_0,_0.06),_inset_0px_0px_40px_rgba(255,_255,_255,_0.8)] sm:px-[40px] sm:py-[32px] mid:w-[803px]">
       <CardContent className="flex-col">
@@ -150,7 +236,10 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
           <Button variant="outline" className="text-grey-700">
             Cancel
           </Button>
-          <Button disabled className="w-full mobile:w-auto">
+          <Button
+            onClick={() => SwapConfirm()}
+            className="w-full mobile:w-auto"
+          >
             <Check className="mr-1 h-4 w-4" />
             Confirm & Swap
           </Button>
