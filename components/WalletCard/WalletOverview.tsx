@@ -17,7 +17,7 @@ import { Card, CardContent } from "../ui/card";
 import Image from "next/image";
 import FundingOptions from "../AddFunds/FundingOptions";
 import WithdrawOptions from "../WithdrawOptions/WithdrawOptions";
-import TokenSwap from "../Swap/swap";
+import TokenSwap from "../Swap/TokenSwap";
 
 interface WalletOverviewProps {
   totalBalanceUSD: number;

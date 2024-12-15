@@ -1,12 +1,12 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ArrowUpDown, Check } from "lucide-react";
-import TokenInput from "./token-input";
-import SwapDetails from "./swap-details";
-import { Token, TokenWithBalance } from "@/lib/types";
+import { ArrowUpDown, Check } from "lucide-react";
+import TokenInput from "./TokenInput";
+import { SwapRouteResponse, Token, TokenWithBalance } from "@/lib/types";
 import { useEffect, useState } from "react";
 import fetch from "cross-fetch";
+import SwapSetting from "./SwapDetails";
 
 interface TokenSwapProps {
   tokenBalances: TokenWithBalance[];
@@ -16,11 +16,16 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
   const [selectedToken, setSelectedToken] = useState<
     TokenWithBalance | undefined
   >(undefined);
-  const [tokens, setTokens] = useState<Token[] | null>(null);
+  const [tokens, setTokens] = useState<Token[] | null>();
+  const [inputSelectedToken, setInputSelectedToken] = useState("SOL");
+  const [outputSelectedToken, setOutputSelectedToken] = useState("USDC");
   const [loading, setLoading] = useState(true);
-  function onTokenSelect(token?: TokenWithBalance | undefined) {
-    setSelectedToken(token);
-  }
+  const [inputAmount, setInputAmount] = useState<string>("");
+  const [outputAmount, setOutputAmount] = useState<string>("");
+  const [inputToken, setInputToken] = useState<TokenWithBalance | undefined>();
+  const [outputToken, setOutputToken] = useState<Token | undefined>();
+  const [quote, setQuote] = useState<SwapRouteResponse | null>(null);
+
   useEffect(() => {
     const fetchTokens = async () => {
       try {
@@ -32,6 +37,7 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
         }
         const data = await response.json();
         setTokens(data);
+        console.log("data", data);
       } catch (err) {
         console.error("Error fetching tokens:", err);
       } finally {
@@ -42,19 +48,48 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
     fetchTokens();
   }, []);
   useEffect(() => {
-    async function swapTokens() {
+    const inputToken = tokenBalances.find(
+      (token) => token.symbol === inputSelectedToken
+    );
+    setSelectedToken(inputToken);
+
+    const outputToken = tokens?.find(
+      (token) => token.symbol === outputSelectedToken
+    );
+
+    setInputToken(inputToken);
+    setOutputToken(outputToken);
+
+    if (inputToken) {
+      fetchSwapQuote();
+    }
+  }, [inputSelectedToken, outputSelectedToken, inputAmount]);
+
+  const fetchSwapQuote = async () => {
+    if (!selectedToken) {
+      return;
+    }
+    const inputAmt = parseFloat(String(inputAmount));
+    if (isNaN(inputAmt) || inputAmt <= 0) {
+      return;
+    }
+    const lamports = Math.round(inputAmt * 1_000_000_000);
+    try {
       const quoteResponse = await (
         await fetch(
-          "https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112\
-      &outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\
-      &amount=100000000\
-      &slippageBps=50"
+          `  https://quote-api.jup.ag/v6/quote?inputMint=${inputToken?.mint}&outputMint=${outputToken?.address}&amount=${lamports}&slippageBps=50`
         )
       ).json();
       console.log(quoteResponse);
+      if (inputAmt > 0) {
+        setQuote(quoteResponse);
+      } else {
+        setQuote(null);
+      }
+    } catch (err) {
+      console.log("err", err);
     }
-    swapTokens();
-  }, []);
+  };
   return (
     <Card className="mx-auto mt-4 flex-col items-center space-y-2 rounded-xl border border-white bg-white/50 p-[20px] text-center shadow-[0px_4px_40px_rgba(0,_0,_0,_0.06),_inset_0px_0px_40px_rgba(255,_255,_255,_0.8)] sm:px-[40px] sm:py-[32px] mid:w-[803px]">
       <CardContent className="flex-col">
@@ -77,23 +112,36 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
         <div className="relative">
           <TokenInput
             tokens={tokenBalances}
-            onTokenSelect={onTokenSelect}
             selectedToken={selectedToken}
             label="You Pay:"
             tokenList={null}
+            setInputSelectedToken={setInputSelectedToken}
+            setAmount={setInputAmount}
+            amount={inputAmount}
           />
-          <div className="no-tap-highlight absolute inset-x-0 bottom-[-18px] z-50 mx-auto flex h-9 w-9 flex-shrink-0 cursor-pointer select-none items-center justify-center rounded-full border border-grey-100 bg-white focus:bg-grey-50 cursor-not-allowed border-grey-50">
+          <div className="no-tap-highlight absolute inset-x-0 bottom-[-18px] z-50 mx-auto flex h-9 w-9 flex-shrink-0 cursor-pointer select-none items-center justify-center rounded-full border border-grey-100 bg-white focus:bg-grey-50 border-grey-50">
             <ArrowUpDown className="h-4 w-4 text-grey-400" />
           </div>
         </div>
         <TokenInput
           label="You Receive:"
           tokenList={tokens}
-          tokens={null}
-          readOnly
+          setOutputSelectedToken={setOutputSelectedToken}
+          readOnly={true}
+          setAmount={setOutputAmount}
+          amount={
+            quote?.outAmount &&
+            outputToken &&
+            inputAmount &&
+            Number(inputAmount) > 0
+              ? (
+                  Number(quote.outAmount) / Math.pow(10, outputToken.decimals)
+                ).toFixed(outputToken.decimals)
+              : ""
+          }
         />
-        <SwapDetails />
-        <div className="mt-6 flex flex-col-reverse justify-between mobile:flex-row">
+        <SwapSetting />
+        <div className="mt-6 flex  gap-3 flex-col-reverse justify-between mobile:flex-row">
           <Button variant="outline" className="text-grey-700">
             Cancel
           </Button>
