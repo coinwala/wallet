@@ -25,6 +25,7 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
   const [inputToken, setInputToken] = useState<TokenWithBalance | undefined>();
   const [outputToken, setOutputToken] = useState<Token | undefined>();
   const [quote, setQuote] = useState<SwapRouteResponse | null>(null);
+  const [slippage, setSlippage] = useState("0.5%");
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -74,10 +75,14 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
       return;
     }
     const lamports = Math.round(inputAmt * 1_000_000_000);
+
+    // Convert slippage percentage to basis points
+    const slippageBps = Math.round(parseFloat(slippage) * 100);
+
     try {
       const quoteResponse = await (
         await fetch(
-          `  https://quote-api.jup.ag/v6/quote?inputMint=${inputToken?.mint}&outputMint=${outputToken?.address}&amount=${lamports}&slippageBps=50`
+          `https://quote-api.jup.ag/v6/quote?inputMint=${inputToken?.mint}&outputMint=${outputToken?.address}&amount=${lamports}&slippageBps=${slippageBps}`
         )
       ).json();
       console.log(quoteResponse);
@@ -140,7 +145,7 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
               : ""
           }
         />
-        <SwapSetting />
+        <SwapSetting setSlippage={setSlippage} slippage={slippage} />
         <div className="mt-6 flex  gap-3 flex-col-reverse justify-between mobile:flex-row">
           <Button variant="outline" className="text-grey-700">
             Cancel
