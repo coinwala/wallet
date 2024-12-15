@@ -29,73 +29,137 @@ export default function TokenInput({
   setAmount,
   amount,
 }: TokenInputProps) {
+  const isInsufficientFunds =
+    amount &&
+    selectedToken &&
+    parseFloat(amount) > parseFloat(selectedToken.balance || "0");
+  const formatNumber = (num: string) => {
+    if (!num || num === "") return "";
+    const cleanNum = num.toString().replace(/,/g, "");
+    if (parseFloat(cleanNum) > 999999999) {
+      return parseFloat(cleanNum).toExponential(2);
+    }
+    const parts = cleanNum.split(".");
+    const formattedInteger = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.length > 1
+      ? `${formattedInteger}.${parts[1]}`
+      : formattedInteger;
+  };
+
   return (
     <div
-      className={`w-full flex bg-white pt-4 px-5 border border-grey-100 pb-5 ${
-        readOnly ? "rounded-b-lg" : "rounded-t-lg"
-      }`}
+      className={`
+        w-full 
+        flex 
+        bg-white 
+        p-4 
+        border 
+        ${isInsufficientFunds ? "border-red-500" : "border-grey-100"}
+        ${readOnly ? "rounded-b-lg" : "rounded-t-lg"}
+        flex-col 
+        sm:flex-row 
+        items-center 
+        space-y-2 
+        sm:space-y-0 
+        sm:space-x-4
+      `}
     >
-      <div className="flex w-full flex-row items-center justify-between mobile:max-h-[92px] mobile:min-h-[92px]">
-        <div className="flex flex-col items-start whitespace-nowrap">
-          <p className="text-xs font-semibold text-grey-800 mobile:mb-2">
-            {label}
-          </p>
-          {!readOnly ? (
-            <div className="relative">
-              {tokens && (
-                <InputputTokenBox
-                  tokens={tokens}
-                  setInputSelectedToken={setInputSelectedToken}
-                />
-              )}
-            </div>
-          ) : (
-            <div className="relative">
-              {readOnly && (
-                <OutputTokenBox
-                  setOutputSelectedToken={setOutputSelectedToken}
-                  tokens={tokenList}
-                />
-              )}
-            </div>
+      <div className="flex flex-col w-full sm:w-1/2 space-y-2">
+        <p className="text-xs flex float-start font-semibold text-grey-800">
+          {label}
+        </p>
+        {!readOnly
+          ? tokens && (
+              <InputputTokenBox
+                tokens={tokens}
+                setInputSelectedToken={setInputSelectedToken}
+              />
+            )
+          : readOnly && (
+              <OutputTokenBox
+                setOutputSelectedToken={setOutputSelectedToken}
+                tokens={tokenList}
+              />
+            )}
+        {!readOnly && (
+          <div className="text-xs flex float-start text-grey-400">
+            <span>Current Balance: </span>
+            <span className="font-bold">
+              {formatNumber(selectedToken?.balance || "0")}{" "}
+              {selectedToken?.symbol}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col w-full sm:w-1/2 items-end space-y-2">
+        {isInsufficientFunds && (
+          <div
+            className="
+            flex 
+            flex-row 
+            items-center 
+            gap-1 
+            self-end 
+            text-xs 
+            font-semibold 
+            text-red-500 
+            bg-red-50 
+            select-none 
+            rounded 
+            px-1 
+            py-0.5
+          "
+          >
+            Insufficient Funds
+          </div>
+        )}
+
+        <div className="w-full flex flex-col items-end">
+          <input
+            type="text"
+            className={`
+              w-full 
+              border-none 
+              bg-white 
+              text-end 
+              font-light 
+              outline-none 
+              text-2xl 
+              sm:text-4xl 
+              lg:text-5xl 
+              break-words 
+              overflow-x-auto
+              ${isInsufficientFunds ? "text-red-500" : ""}
+            `}
+            placeholder="0"
+            value={formatNumber(amount || "")}
+            onChange={(e) => {
+              const value = e.target.value.replace(/[^0-9.]/g, "");
+              setAmount && setAmount(value);
+            }}
+            readOnly={readOnly}
+          />
+
+          {!readOnly && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="
+                mt-2 
+                h-6 
+                min-h-6 
+                px-2 
+                text-xs 
+                rounded-xl
+              "
+              onClick={() =>
+                setAmount && setAmount(selectedToken?.balance || "")
+              }
+            >
+              Max
+            </Button>
           )}
-          <div className="mt-1 inline-flex gap-1 text-xs text-grey-400 mobile:mt-2">
-            {!readOnly && (
-              <span>
-                <span>Current Balance: </span>
-                <span className="font-bold">
-                  {selectedToken?.balance} {selectedToken?.symbol}
-                </span>
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="ml-2 flex grow flex-col items-end">
-          <div className="relative flex w-full flex-col items-end">
-            <input
-              type="text"
-              inputMode="decimal"
-              className="w-full border-none bg-white text-end font-light outline-none text-5xl"
-              placeholder="0"
-              value={amount}
-              onChange={(e) => setAmount && setAmount(e.target.value)}
-              readOnly={readOnly}
-            />
-            {!readOnly && (
-              <div className="mt-1">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="h-5 max-h-5 min-h-5 w-10 min-w-10 max-w-10 rounded-xl text-[11px]"
-                  onClick={() =>
-                    setAmount && setAmount(selectedToken?.balance || "")
-                  }
-                >
-                  Max
-                </Button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

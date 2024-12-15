@@ -1,12 +1,12 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ArrowUpDown, Check } from "lucide-react";
+import { ArrowUpDown, Check } from "lucide-react";
 import TokenInput from "./TokenInput";
-import SwapDetails from "./SwapDetails";
 import { SwapRouteResponse, Token, TokenWithBalance } from "@/lib/types";
 import { useEffect, useState } from "react";
 import fetch from "cross-fetch";
+import SwapSetting from "./SwapDetails";
 
 interface TokenSwapProps {
   tokenBalances: TokenWithBalance[];
@@ -56,11 +56,15 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
     const outputToken = tokens?.find(
       (token) => token.symbol === outputSelectedToken
     );
-    console.log("outputToken", outputToken?.address);
+
     setInputToken(inputToken);
     setOutputToken(outputToken);
-    fetchSwapQuote();
+
+    if (inputToken) {
+      fetchSwapQuote();
+    }
   }, [inputSelectedToken, outputSelectedToken, inputAmount]);
+
   const fetchSwapQuote = async () => {
     if (!selectedToken) {
       return;
@@ -76,8 +80,12 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
           `  https://quote-api.jup.ag/v6/quote?inputMint=${inputToken?.mint}&outputMint=${outputToken?.address}&amount=${lamports}&slippageBps=50`
         )
       ).json();
-      console.log("quoteResponse", quoteResponse);
-      setQuote(quoteResponse);
+      console.log(quoteResponse);
+      if (inputAmt > 0) {
+        setQuote(quoteResponse);
+      } else {
+        setQuote(null);
+      }
     } catch (err) {
       console.log("err", err);
     }
@@ -111,7 +119,7 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
             setAmount={setInputAmount}
             amount={inputAmount}
           />
-          <div className="no-tap-highlight absolute inset-x-0 bottom-[-18px] z-50 mx-auto flex h-9 w-9 flex-shrink-0 cursor-pointer select-none items-center justify-center rounded-full border border-grey-100 bg-white focus:bg-grey-50 cursor-not-allowed border-grey-50">
+          <div className="no-tap-highlight absolute inset-x-0 bottom-[-18px] z-50 mx-auto flex h-9 w-9 flex-shrink-0 cursor-pointer select-none items-center justify-center rounded-full border border-grey-100 bg-white focus:bg-grey-50 border-grey-50">
             <ArrowUpDown className="h-4 w-4 text-grey-400" />
           </div>
         </div>
@@ -119,18 +127,21 @@ export default function TokenSwap({ tokenBalances }: TokenSwapProps) {
           label="You Receive:"
           tokenList={tokens}
           setOutputSelectedToken={setOutputSelectedToken}
-          readOnly
+          readOnly={true}
           setAmount={setOutputAmount}
           amount={
-            quote?.outAmount && outputToken && inputToken
+            quote?.outAmount &&
+            outputToken &&
+            inputAmount &&
+            Number(inputAmount) > 0
               ? (
                   Number(quote.outAmount) / Math.pow(10, outputToken.decimals)
                 ).toFixed(outputToken.decimals)
               : ""
           }
         />
-        <SwapDetails />
-        <div className="mt-6 flex  gap-1 flex-col-reverse justify-between mobile:flex-row">
+        <SwapSetting />
+        <div className="mt-6 flex  gap-3 flex-col-reverse justify-between mobile:flex-row">
           <Button variant="outline" className="text-grey-700">
             Cancel
           </Button>

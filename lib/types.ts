@@ -146,3 +146,32 @@ export interface Token {
   symbol: string;
   tags: string[];
 }
+export interface SwapRouteResponse {
+  inputMint: string;
+  inAmount: string;
+  outputMint: string;
+  outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: "ExactIn" | "ExactOut";
+  slippageBps: number;
+  platformFee: null | number;
+  priceImpactPct: string;
+  routePlan: RoutePlanItem[];
+  scoreReport: null | any;
+  contextSlot: number;
+  timeTaken: number;
+}
+
+export interface RoutePlanItem {
+  swapInfo: {
+    ammKey: string;
+    label: string;
+    inputMint: string;
+    outputMint: string;
+    inAmount: string;
+    outAmount: string;
+    feeAmount: string;
+    feeMint: string;
+  };
+  percent: number;
+}
