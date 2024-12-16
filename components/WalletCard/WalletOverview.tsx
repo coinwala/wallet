@@ -42,13 +42,13 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
       case "add":
         return (
           <div>
-            <FundingOptions HyperLinkPublicKey={publicKey} />
+            <FundingOptions CoinWalaPublicKey={publicKey} />
           </div>
         );
       case "withdraw":
         return (
           <div>
-            <WithdrawOptions HyperLinkPublicKey={publicKey} />
+            <WithdrawOptions CoinWalaPublicKey={publicKey} />
           </div>
         );
       case "swap":
@@ -102,7 +102,7 @@ const WalletOverview: React.FC<WalletOverviewProps> = ({
           <div className="flex w-full items-start justify-between">
             <p className="mb-0 inline-flex items-center justify-start text-left text-xs font-semibold text-gray-400 sm:mb-3 sm:text-sm">
               <Wallet className="mr-1 h-4 w-4" />
-              HyperLink Account Assets
+              CoinWala Account Assets
             </p>
           </div>
           <div className="flex w-full items-center justify-between">

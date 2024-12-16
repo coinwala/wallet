@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa6";
 import Link from "next/link";
 import CoinwalaLogo from "../CoinWala";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -14,11 +15,14 @@ export function Footer() {
       <div className="mx-auto w-full max-w-screen-xl lg:p-4  lg:py-8">
         <div className="md:flex md:justify-between">
           <div className="mb-6 md:mb-0">
-            <div className="bg-black border pl-5 w-[150px] h-[60px] border-white/25 rounded-md shadow-inner shadow-white/55  flex items-center justify-center">
-              <CoinwalaLogo
-                className="flex justify-center items-center"
-                width="250"
-                height="60"
+            <div className="bg-black border p-2 border-white/25 rounded-md shadow-inner shadow-white/55  flex items-center justify-center">
+              <Image
+                className="rounded-lg"
+                src="/assets/images/images/symbolLogo.png"
+                alt="logo"
+                width={40}
+                height={40}
+                priority
               />
             </div>
           </div>
@@ -28,7 +32,7 @@ export function Footer() {
               <ul className="text-gray-500 text-sm dark:text-gray-400 font-medium">
                 <li className="mb-4">
                   <Link href="#" className="hover:underline">
-                    Create hyperlink
+                    Create CoinWala link
                   </Link>
                 </li>
                 <li className="mb-4">
