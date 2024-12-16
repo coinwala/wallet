@@ -14,9 +14,16 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-export default function SwapSettingsModal() {
+interface swapProps {
+  setSlippage: React.Dispatch<React.SetStateAction<string>>;
+  slippage: string;
+}
+
+export default function SwapSettingsModal({
+  setSlippage,
+  slippage,
+}: swapProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [slippage, setSlippage] = useState("0.5%");
   const [customSlippage, setCustomSlippage] = useState("0.5%");
   const [directRouteOnly, setDirectRouteOnly] = useState(false);
 
@@ -53,12 +60,7 @@ export default function SwapSettingsModal() {
             Swap Settings
           </DialogTitle>
         </DialogHeader>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="absolute right-[10px] top-[10px] cursor-pointer"
-        >
-          <X className="h-5 w-5 text-gray-400" />
-        </button>
+
         <div className="p-4 mobile:p-8">
           <p className="mb-2 mt-4 text-sm font-semibold text-gray-700 mobile:text-xs">
             Slippage

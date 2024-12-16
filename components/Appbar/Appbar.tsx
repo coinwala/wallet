@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
+import Image from "next/image";
 
 const SignIn = dynamic(() => import("../auth/signin-button"), { ssr: false });
 const CoinwalaLogo = dynamic(() => import("../CoinWala"), { ssr: false });
@@ -124,10 +125,11 @@ const NavbarResponsive = () => {
           <div className="max-w-[100vw] mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <nav className="flex items-center justify-between h-16">
               <div className="flex-shrink-0">
-                <CoinwalaLogo
-                  width="150"
-                  height="40"
-                  className="w-auto h-8 md:h-10"
+                <Image
+                  src={"/assets/images/images/nameLogo.png"}
+                  height={120}
+                  width={120}
+                  alt="logo"
                 />
               </div>
               <div
