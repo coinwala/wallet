@@ -40,11 +40,10 @@ const sendMessageToParent = (message: MessagePayload) => {
   ];
   const productionOrigins = process.env.NEXT_PUBLIC_ALLOWED_ORIGINS
     ? JSON.parse(process.env.NEXT_PUBLIC_ALLOWED_ORIGINS)
-    : ["https://yourdomain.com"]; // Replace with your production domains
+    : ["https://wallet.coinwala.io"];
 
   const originsToTry = isDevelopment ? developmentOrigins : productionOrigins;
 
-  // Try sending to each allowed origin
   let messageSent = false;
   for (const origin of originsToTry) {
     try {
