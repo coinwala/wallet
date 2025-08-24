@@ -74,6 +74,11 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
   const globeRef = useRef<ThreeGlobe | null>(null);
 
+  // Prevent SSR issues by checking if we're in the browser
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   const defaultProps = {
     pointSize: 1,
     atmosphereColor: "#ffffff",
@@ -92,7 +97,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
   };
 
   useEffect(() => {
-    if (globeRef.current) {
+    if (globeRef.current && typeof window !== "undefined") {
       _buildData();
       _buildMaterial();
     }
@@ -233,6 +238,11 @@ export function Globe({ globeConfig, data }: WorldProps) {
 export function WebGLRendererConfig() {
   const { gl, size } = useThree();
 
+  // Prevent SSR issues
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   useEffect(() => {
     gl.setPixelRatio(window.devicePixelRatio);
     gl.setSize(size.width, size.height);
@@ -244,10 +254,26 @@ export function WebGLRendererConfig() {
 
 export function World(props: WorldProps) {
   const { globeConfig } = props;
-  const scene = new Scene();
-  scene.fog = new Fog(0xffffff, 400, 2000);
+  const [scene, setScene] = useState<Scene | null>(null);
+  const [camera, setCamera] = useState<PerspectiveCamera | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const newScene = new Scene();
+      newScene.fog = new Fog(0xffffff, 400, 2000);
+      setScene(newScene);
+
+      const newCamera = new PerspectiveCamera(50, aspect, 180, 1800);
+      setCamera(newCamera);
+    }
+  }, []);
+
+  if (!scene || !camera) {
+    return null; // or a loading state
+  }
+
   return (
-    <Canvas scene={scene} camera={new PerspectiveCamera(50, aspect, 180, 1800)}>
+    <Canvas scene={scene} camera={camera}>
       <WebGLRendererConfig />
       <ambientLight color={globeConfig.ambientLight} intensity={0.6} />
       <directionalLight

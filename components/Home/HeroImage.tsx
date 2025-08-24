@@ -1,10 +1,21 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRightLeft, Link } from "lucide-react";
-import { World } from "../ui/globe";
+import dynamic from "next/dynamic";
 import { globeConfig, sampleArcs } from "@/lib/GlobeConstant";
 import { CardDemo } from "../AnimatedCard";
+
+// Dynamically import the Globe component to avoid SSR issues
+const World = dynamic(
+  () => import("../ui/globe").then((mod) => ({ default: mod.World })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full bg-gray-800 rounded-lg animate-pulse" />
+    ),
+  }
+);
 
 const AnimatedBeamBorder = () => {
   return (
