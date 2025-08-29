@@ -22,8 +22,8 @@ export const LoginDialog = ({
         <Image
           src="/icons/logo.png"
           alt="logo"
-          width={90}
-          height={90}
+          width={60}
+          height={60}
           priority
         />
       </div>

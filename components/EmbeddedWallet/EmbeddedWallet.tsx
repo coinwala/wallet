@@ -18,7 +18,6 @@ import { LoginDialog } from "./LoginDialog";
 import TransactionDialog from "./TransactionDialog";
 import { getPrivateKey } from "@/lib/client";
 
-// View types enum
 enum ViewType {
   WALLET = "WALLET",
   LOGIN = "LOGIN",
@@ -152,7 +151,6 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
         transaction.recentBlockhash = blockhash;
 
-        // Sign the transaction
         transaction.sign(keypair);
 
         const isVerified = transaction.verifySignatures();
@@ -522,8 +520,7 @@ export default function EmbeddedWallet({ session }: UserInfoProps) {
 
   const handleLoginClose = useCallback(() => {
     sendMessageToParent({
-      type: "cancel_connect",
-      windowName: "",
+      type: "cancel_connect", windowName: "",
     });
   }, [sendMessageToParent]);
 

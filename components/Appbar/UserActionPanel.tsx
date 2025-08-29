@@ -54,7 +54,7 @@ export default function UserActionPanel({
             >
               <Image
                 className="rounded-lg"
-                src="/icons/LogoLight.png"
+                src="/icons/logo.png"
                 alt="logo"
                 width={40}
                 height={40}
