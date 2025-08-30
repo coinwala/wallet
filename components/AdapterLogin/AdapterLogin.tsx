@@ -37,10 +37,11 @@ const sendMessageToParent = (message: MessagePayload) => {
     "http://localhost:3000",
     "http://localhost:3001",
     "https://wallet.coinwala.io",
+    "https://curiousdev.xyz",
   ];
   const productionOrigins = process.env.NEXT_PUBLIC_ALLOWED_ORIGINS
     ? JSON.parse(process.env.NEXT_PUBLIC_ALLOWED_ORIGINS)
-    : ["https://wallet.coinwala.io"];
+    : ["https://wallet.coinwala.io", "https://curiousdev.xyz"];
 
   const originsToTry = isDevelopment ? developmentOrigins : productionOrigins;
 

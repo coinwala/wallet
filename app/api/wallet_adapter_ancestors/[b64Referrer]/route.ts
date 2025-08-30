@@ -4,6 +4,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://wallet.coinwala.io",
+  "https://curiousdev.xyz",
 ];
 
 function corsMiddleware(req: NextRequest) {
@@ -89,6 +90,7 @@ export async function GET(
       "http://localhost:3000",
       "http://localhost:3001",
       "https://wallet.coinwala.io",
+      "https://curiousdev.xyz",
     ];
 
     if (!ALLOWED_DOMAINS.includes(sanitizedUrl)) {
